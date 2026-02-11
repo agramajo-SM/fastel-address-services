@@ -1,0 +1,64 @@
+#avalaunch-address-search-container {
+    max-width: 600px;
+    margin: 20px auto;
+    padding: 20px;
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+#avalaunch-address-input {
+    width: 100%;
+    margin-top: 10px;
+    margin-bottom: 20px;
+    /* Border and padding moved to ::part(input) for the web component */
+}
+
+gmp-place-autocomplete#avalaunch-address-input::part(input) {
+    padding: 10px;
+    /* border: 1px solid #ccc; */
+    border-radius: 4px;
+    box-sizing: border-box;
+    width: 100%;
+}
+
+/* Force Light Theme & Neutral/Formal Style */
+/* Force Light Theme & Neutral/Formal Style */
+gmp-place-autocomplete {
+    /* Prevent dark mode inheritance */
+    color-scheme: light;
+
+    --gmpx-color-surface: #ffffff;
+    --gmpx-color-on-surface: #2c3e50;
+    /* Formal dark blue/gray text */
+    --gmpx-color-on-surface-variant: #596e79;
+    /* Secondary text */
+    --gmpx-font-family-base: 'Arial', sans-serif;
+    /* Formal font */
+    --gmpx-font-family-headings: 'Arial', sans-serif;
+
+    /* Ensure component background is white */
+    background-color: #ffffff;
+    color: #2c3e50;
+}
+
+#avalaunch-services-results {
+    margin-top: 20px;
+    padding: 15px;
+    background: #fff;
+    border: 1px solid #eee;
+    border-radius: 4px;
+}
+
+#avalaunch-services-results h3 {
+    margin-top: 0;
+}
+
+#avalaunch-services-results ul {
+    list-style-type: disc;
+    margin-left: 20px;
+}
+
+.error {
+    color: red;
+}
