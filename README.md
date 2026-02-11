@@ -16,7 +16,7 @@ This plugin provides a shortcode to display an address search bar. When a user s
 
 1.  Upload the `avalaunch-address-services` folder to the `/wp-content/plugins/` directory.
 2.  Activate the plugin through the 'Plugins' menu in WordPress.
-3.  Navigate to **Avalaunch Settings** to configure your API Credentials.
+3.  Navigate to **Settings > Address Services** in the WordPress admin menu to configure your API Credentials.
 
 ## Configuration
 
