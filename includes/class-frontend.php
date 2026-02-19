@@ -13,14 +13,14 @@ class Avalaunch_Frontend {
 	}
 
 	public function enqueue_scripts() {
-		$options = get_option( 'avalaunch_options' );
+		$options        = get_option( 'avalaunch_options' );
 		$google_api_key = isset( $options['google_maps_api_key'] ) ? $options['google_maps_api_key'] : '';
 
 		wp_enqueue_script(
 			'avalaunch-frontend-js',
 			AVALAUNCH_PLUGIN_URL . 'assets/js/frontend.js',
 			array( 'jquery' ),
-			'1.0.5',
+			'2.1.0',
 			true
 		);
 
@@ -32,7 +32,7 @@ class Avalaunch_Frontend {
 		if ( ! empty( $google_api_key ) ) {
 			wp_enqueue_script(
 				'google-maps-places',
-				'https://maps.googleapis.com/maps/api/js?key=' . esc_attr( $google_api_key ) . '&libraries=places&loading=async&callback=initAvalaunchMap',
+				'https://maps.googleapis.com/maps/api/js?key=' . esc_attr( $google_api_key ) . '&libraries=places&v=weekly&loading=async&callback=initAvalaunchMap',
 				array( 'avalaunch-frontend-js' ),
 				null,
 				true
@@ -43,18 +43,55 @@ class Avalaunch_Frontend {
 			'avalaunch-frontend-css',
 			AVALAUNCH_PLUGIN_URL . 'assets/css/style.css',
 			array(),
-			'1.1.1'
+			'2.1.0'
 		);
 	}
 
 	public function render_shortcode( $atts ) {
 		ob_start();
 		?>
-		<div id="avalaunch-address-search-container">
-			<label for="avalaunch-address-input">Search for your address:</label>
-			<input type="text" id="avalaunch-address-input" placeholder="Start typing your address..." autocomplete="off">
-			<div id="avalaunch-search-results"></div>
-			<div id="avalaunch-services-results" style="display:none;"></div>
+		<div id="avalaunch-address-search-wrapper">
+
+			<!-- ① Search Card -->
+			<div class="aas-card" id="aas-search-card">
+				<p class="aas-section-label">SEARCH FOR YOUR ADDRESS:</p>
+				<div class="aas-search-row">
+					<div id="avalaunch-place-container">
+						<!-- input injected by JS -->
+					</div>
+					<div class="aas-radius-group">
+						<label class="aas-radius-label" for="avalaunch-radius">Search within:</label>
+						<select id="avalaunch-radius">
+							<option value="5">5 miles</option>
+							<option value="10">10 miles</option>
+							<option value="25">25 miles</option>
+							<option value="50" selected>50 miles</option>
+							<option value="100">100 miles</option>
+						</select>
+					</div>
+					<button id="aas-search-btn" type="button">Search</button>
+				</div>
+			</div>
+
+			<!-- ② Results Card (hidden until results arrive) -->
+			<div class="aas-card" id="aas-results-card" style="display:none;">
+				<div class="aas-results-header">
+					<span id="aas-results-count"></span>
+					<a href="#" id="aas-clear-results">Clear Results</a>
+				</div>
+				<div id="avalaunch-services-results"></div>
+			</div>
+
+			<!-- ③ Map Card -->
+			<div class="aas-card aas-map-card" id="aas-map-card">
+				<svg class="aas-map-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+					<polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
+					<line x1="8" y1="2" x2="8" y2="18"/>
+					<line x1="16" y1="6" x2="16" y2="22"/>
+				</svg>
+				<p class="aas-map-label">Map View Loading...</p>
+			</div>
+
 		</div>
 		<?php
 		return ob_get_clean();
@@ -64,16 +101,29 @@ class Avalaunch_Frontend {
 		check_ajax_referer( 'avalaunch_search_nonce', 'nonce' );
 
 		$address_data = isset( $_POST['address_data'] ) ? $_POST['address_data'] : array();
+		$lat          = isset( $_POST['lat'] )          ? floatval( $_POST['lat'] )  : null;
+		$lng          = isset( $_POST['lng'] )          ? floatval( $_POST['lng'] )  : null;
+		$radius_miles = isset( $_POST['radius_miles'] ) ? intval( $_POST['radius_miles'] ) : 25;
 
-		if ( empty( $address_data ) ) {
-			wp_send_json_error( 'No address data provided' );
+		// Validate radius to allowed values
+		$allowed_radii = array( 5, 10, 25, 50, 100 );
+		if ( ! in_array( $radius_miles, $allowed_radii ) ) {
+			$radius_miles = 25;
 		}
 
 		$salesforce = new Avalaunch_Salesforce();
-		$services = $salesforce->get_services_by_address( $address_data );
+
+		if ( ! is_null( $lat ) && ! is_null( $lng ) ) {
+			$services = $salesforce->get_services_by_location( $lat, $lng, $radius_miles );
+		} elseif ( ! empty( $address_data['postal_code'] ) ) {
+			$services = $salesforce->get_services_by_address( $address_data );
+		} else {
+			wp_send_json_error( array( 'message' => 'No location data provided.' ) );
+			return;
+		}
 
 		if ( is_wp_error( $services ) ) {
-			wp_send_json_error( $services->get_error_message() );
+			wp_send_json_error( array( 'message' => $services->get_error_message() ) );
 		}
 
 		wp_send_json_success( $services );

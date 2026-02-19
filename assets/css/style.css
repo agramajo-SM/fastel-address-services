@@ -1,64 +1,392 @@
-#avalaunch-address-search-container {
-    max-width: 600px;
-    margin: 20px auto;
-    padding: 20px;
-    background: #f9f9f9;
-    border: 1px solid #ddd;
-    border-radius: 5px;
+/* ============================================================
+   Avalaunch Address Services — GUI v2.0
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* --- Wrapper --- */
+#avalaunch-address-search-wrapper {
+    max-width: 960px;
+    margin: 0 auto;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
 }
 
+/* --- Shared Card --- */
+.aas-card {
+    background: #ffffff;
+    border: 1px solid #e2e4e9;
+    border-radius: 16px;
+    padding: 24px 28px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* ============================================================
+   ① SEARCH CARD
+   ============================================================ */
+
+.aas-section-label {
+    margin: 0 0 12px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #374151;
+}
+
+/* Row: [input  |  radius group  |  button] */
+.aas-search-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+}
+
+/* Address input wrapper — grows to fill available space */
+#avalaunch-place-container {
+    position: relative;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+/* Search icon */
+#avalaunch-place-container::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 14px;
+    transform: translateY(-50%);
+    width: 18px;
+    height: 18px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Text input */
 #avalaunch-address-input {
     width: 100%;
-    margin-top: 10px;
-    margin-bottom: 20px;
-    /* Border and padding moved to ::part(input) for the web component */
-}
-
-gmp-place-autocomplete#avalaunch-address-input::part(input) {
-    padding: 10px;
-    /* border: 1px solid #ccc; */
-    border-radius: 4px;
     box-sizing: border-box;
-    width: 100%;
+    padding: 13px 16px 13px 42px;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 15px;
+    color: #111827;
+    background: #ffffff;
+    border: 1.5px solid #d1d5db;
+    border-radius: 10px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    -webkit-appearance: none;
+    appearance: none;
 }
 
-/* Force Light Theme & Neutral/Formal Style */
-/* Force Light Theme & Neutral/Formal Style */
-gmp-place-autocomplete {
-    /* Prevent dark mode inheritance */
-    color-scheme: light;
-
-    --gmpx-color-surface: #ffffff;
-    --gmpx-color-on-surface: #2c3e50;
-    /* Formal dark blue/gray text */
-    --gmpx-color-on-surface-variant: #596e79;
-    /* Secondary text */
-    --gmpx-font-family-base: 'Arial', sans-serif;
-    /* Formal font */
-    --gmpx-font-family-headings: 'Arial', sans-serif;
-
-    /* Ensure component background is white */
-    background-color: #ffffff;
-    color: #2c3e50;
+#avalaunch-address-input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
 }
 
+#avalaunch-address-input::placeholder {
+    color: #9ca3af;
+}
+
+/* Radius group: label stacked above select */
+.aas-radius-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.aas-radius-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: #6b7280;
+    white-space: nowrap;
+}
+
+#avalaunch-radius {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: #374151;
+    background: #ffffff;
+    border: 1.5px solid #d1d5db;
+    border-radius: 10px;
+    padding: 10px 40px 10px 14px;
+    outline: none;
+    cursor: pointer;
+    min-width: 140px;
+    -webkit-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 16px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+#avalaunch-radius:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+/* Search button */
+#aas-search-btn {
+    flex-shrink: 0;
+    background: #1e4db7;
+    color: #ffffff;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 28px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.18s, transform 0.1s;
+    line-height: 1.5;
+}
+
+#aas-search-btn:hover {
+    background: #1640a0;
+}
+
+#aas-search-btn:active {
+    transform: scale(0.97);
+}
+
+/* ============================================================
+   ② RESULTS CARD
+   ============================================================ */
+
+/* Header row: count left, clear-results link right */
+.aas-results-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+}
+
+#aas-results-count {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: #1f2937;
+}
+
+#aas-clear-results {
+    font-size: 14px;
+    font-weight: 500;
+    color: #2563eb;
+    text-decoration: none;
+    transition: color 0.15s;
+}
+
+#aas-clear-results:hover {
+    color: #1d4ed8;
+    text-decoration: underline;
+}
+
+/* Account sub-cards */
 #avalaunch-services-results {
-    margin-top: 20px;
-    padding: 15px;
-    background: #fff;
-    border: 1px solid #eee;
-    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
-#avalaunch-services-results h3 {
-    margin-top: 0;
+.aas-account-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border: 1px solid #e2e4e9;
+    border-radius: 12px;
+    padding: 14px 18px;
+    background: #ffffff;
+    transition: box-shadow 0.15s;
 }
 
-#avalaunch-services-results ul {
-    list-style-type: disc;
-    margin-left: 20px;
+.aas-account-card:hover {
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
 }
 
-.error {
-    color: red;
+/* Left: name + location */
+.aas-account-info {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.aas-account-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.aas-account-name.aas-dim {
+    font-weight: 600;
+    color: #6b7280;
+}
+
+.aas-account-loc {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    color: #6b7280;
+}
+
+.aas-account-loc svg {
+    flex-shrink: 0;
+    width: 13px;
+    height: 13px;
+    color: #6b7280;
+}
+
+/* Right: distance + details link */
+.aas-account-actions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-shrink: 0;
+}
+
+.aas-distance-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #4f4b8a;
+    background: rgba(99, 95, 196, 0.10);
+    border-radius: 20px;
+    padding: 4px 12px;
+    white-space: nowrap;
+}
+
+.aas-distance-badge svg {
+    width: 12px;
+    height: 12px;
+    flex-shrink: 0;
+}
+
+.aas-view-details {
+    font-size: 14px;
+    font-weight: 500;
+    color: #2563eb;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: color 0.15s;
+}
+
+.aas-view-details:hover {
+    color: #1d4ed8;
+}
+
+/* Error / no-results / loading */
+.aas-message {
+    font-size: 14px;
+    color: #6b7280;
+    margin: 0;
+    padding: 6px 0;
+}
+
+.aas-message.error {
+    color: #dc2626;
+}
+
+/* ============================================================
+   ③ MAP CARD
+   ============================================================ */
+
+.aas-map-card {
+    background: #f0f0f5;
+    border-color: #e2e4e9;
+    height: 420px;
+    padding: 0;
+    overflow: hidden;
+    position: relative;
+}
+
+/* Placeholder shown before map tiles load */
+.aas-map-card .aas-map-icon,
+.aas-map-card .aas-map-label {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    pointer-events: none;
+    transition: opacity 0.3s;
+}
+
+.aas-map-card .aas-map-icon {
+    width: 52px;
+    height: 52px;
+    color: #9ca3af;
+    top: calc(50% - 40px);
+    transform: translate(-50%, -50%);
+}
+
+.aas-map-card .aas-map-label {
+    bottom: auto;
+    top: calc(50% + 14px);
+    margin: 0;
+    font-size: 14px;
+    font-weight: 500;
+    color: #9ca3af;
+    white-space: nowrap;
+}
+
+/* ============================================================
+   Google Autocomplete dropdown override
+   ============================================================ */
+.pac-container {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+    border: 1.5px solid #e5e7eb !important;
+    border-radius: 12px !important;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12) !important;
+    margin-top: 6px !important;
+    overflow: hidden !important;
+    padding: 4px !important;
+    background: #ffffff !important;
+}
+
+.pac-item {
+    padding: 10px 12px !important;
+    border-top: none !important;
+    border-radius: 8px !important;
+    cursor: pointer !important;
+    font-size: 14px !important;
+    color: #374151 !important;
+    line-height: 1.4 !important;
+    margin: 2px 0 !important;
+    transition: background 0.12s !important;
+}
+
+.pac-item:hover,
+.pac-item-selected {
+    background: #f3f4f6 !important;
+}
+
+.pac-item-query {
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    color: #111827 !important;
+    padding-right: 4px !important;
+}
+
+.pac-matched {
+    color: #2563eb !important;
+    font-weight: 600 !important;
+}
+
+.pac-icon {
+    display: none !important;
 }
