@@ -21,7 +21,9 @@ class Avalaunch_Salesforce {
 		$radius = intval( $radius_miles );
 
 		$query = sprintf(
-			"SELECT Id, Name, BillingCity, BillingState, BillingPostalCode, BillingLatitude, BillingLongitude " .
+			"SELECT Id, Name, Phone, Website, Industry, Type, NumberOfEmployees, " .
+			"BillingStreet, BillingCity, BillingState, BillingPostalCode, BillingCountry, " .
+			"BillingLatitude, BillingLongitude " .
 			"FROM Account " .
 			"WHERE DISTANCE(BillingAddress, GEOLOCATION(%f, %f), 'mi') < %d " .
 			"ORDER BY DISTANCE(BillingAddress, GEOLOCATION(%f, %f), 'mi') ASC " .
@@ -65,11 +67,18 @@ class Avalaunch_Salesforce {
 			$accounts[] = array(
 				'Id'                => $record['Id'],
 				'Name'              => $record['Name'],
-				'BillingCity'       => isset( $record['BillingCity'] ) ? $record['BillingCity'] : '',
-				'BillingState'      => isset( $record['BillingState'] ) ? $record['BillingState'] : '',
+				'Phone'             => isset( $record['Phone'] )             ? $record['Phone']             : '',
+				'Website'           => isset( $record['Website'] )           ? $record['Website']           : '',
+				'Industry'          => isset( $record['Industry'] )          ? $record['Industry']          : '',
+				'Type'              => isset( $record['Type'] )              ? $record['Type']              : '',
+				'NumberOfEmployees' => isset( $record['NumberOfEmployees'] ) ? intval( $record['NumberOfEmployees'] ) : null,
+				'BillingStreet'     => isset( $record['BillingStreet'] )     ? $record['BillingStreet']     : '',
+				'BillingCity'       => isset( $record['BillingCity'] )       ? $record['BillingCity']       : '',
+				'BillingState'      => isset( $record['BillingState'] )      ? $record['BillingState']      : '',
 				'BillingPostalCode' => isset( $record['BillingPostalCode'] ) ? $record['BillingPostalCode'] : '',
-				'BillingLatitude'   => isset( $record['BillingLatitude'] ) ? floatval( $record['BillingLatitude'] ) : null,
-				'BillingLongitude'  => isset( $record['BillingLongitude'] ) ? floatval( $record['BillingLongitude'] ) : null,
+				'BillingCountry'    => isset( $record['BillingCountry'] )    ? $record['BillingCountry']    : '',
+				'BillingLatitude'   => isset( $record['BillingLatitude'] )   ? floatval( $record['BillingLatitude'] ) : null,
+				'BillingLongitude'  => isset( $record['BillingLongitude'] )  ? floatval( $record['BillingLongitude'] ) : null,
 				'distance_miles'    => $dist ? round( $dist, 1 ) : null,
 			);
 		}

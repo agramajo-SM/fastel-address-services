@@ -285,6 +285,12 @@
     text-decoration: none;
     white-space: nowrap;
     transition: color 0.15s;
+    /* reset button defaults */
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    font-family: inherit;
 }
 
 .aas-view-details:hover {
@@ -389,4 +395,341 @@
 
 .pac-icon {
     display: none !important;
+}
+
+/* ============================================================
+   ACCOUNT DETAILS MODAL
+   ============================================================ */
+
+/* Overlay */
+#aas-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 20, 40, 0.55);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    z-index: 99999;
+    display: none;
+    /* shown via JS */
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: aasOverlayIn 0.2s ease;
+}
+
+@keyframes aasOverlayIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* Modal panel */
+#aas-modal {
+    background: #ffffff;
+    border-radius: 18px;
+    width: 100%;
+    max-width: 560px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.22);
+    animation: aasModalIn 0.22s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+@keyframes aasModalIn {
+    from {
+        opacity: 0;
+        transform: scale(0.93) translateY(12px);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* Header */
+#aas-modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 24px 24px 20px;
+    border-bottom: 1px solid #f0f0f5;
+    flex-shrink: 0;
+}
+
+#aas-modal-type {
+    margin: 0 0 4px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #6b7280;
+}
+
+#aas-modal-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: #111827;
+    line-height: 1.25;
+}
+
+#aas-modal-close {
+    flex-shrink: 0;
+    width: 34px;
+    height: 34px;
+    border: none;
+    background: #f3f4f6;
+    border-radius: 50%;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, color 0.15s;
+}
+
+#aas-modal-close:hover {
+    background: #e5e7eb;
+    color: #111827;
+}
+
+/* Body */
+#aas-modal-body {
+    overflow-y: auto;
+    padding: 20px 24px;
+    flex: 1;
+}
+
+/* Distance row */
+#aas-modal-distance-row {
+    margin-bottom: 18px;
+}
+
+#aas-modal-distance-row .aas-distance-badge {
+    font-size: 13px;
+}
+
+/* Sections */
+.aas-modal-section {
+    margin-bottom: 20px;
+}
+
+.aas-modal-section:last-child {
+    margin-bottom: 0;
+}
+
+.aas-modal-section-title {
+    margin: 0 0 10px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: #9ca3af;
+}
+
+/* Field grid: 2 columns */
+.aas-modal-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.aas-modal-field {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.aas-modal-field-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #9ca3af;
+}
+
+.aas-modal-field-value {
+    font-size: 14px;
+    font-weight: 500;
+    color: #111827;
+    word-break: break-word;
+}
+
+a.aas-modal-link {
+    color: #2563eb;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    word-break: break-all;
+}
+
+a.aas-modal-link:hover {
+    text-decoration: underline;
+}
+
+/* Modal responsive */
+@media screen and (max-width: 480px) {
+    #aas-modal-overlay {
+        padding: 12px;
+        align-items: flex-end;
+    }
+
+    #aas-modal {
+        border-radius: 18px 18px 0 0;
+        max-height: 85vh;
+    }
+
+    .aas-modal-grid {
+        grid-template-columns: 1fr;
+    }
+
+    #aas-modal-title {
+        font-size: 16px;
+    }
+}
+
+
+
+/* ============================================================
+   RESPONSIVE — Tablet  (≤ 768 px)
+   ============================================================ */
+@media screen and (max-width: 768px) {
+
+    #avalaunch-address-search-wrapper {
+        gap: 14px !important;
+    }
+
+    .aas-card {
+        border-radius: 12px !important;
+        padding: 20px 16px !important;
+    }
+
+    /* Stack the search row vertically */
+    .aas-search-row {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 10px !important;
+    }
+
+    /* Input container fills full width */
+    #avalaunch-place-container {
+        width: 100% !important;
+        flex: none !important;
+    }
+
+    #avalaunch-address-input {
+        width: 100% !important;
+        box-sizing: border-box !important;
+        display: block !important;
+    }
+
+    /* Radius group: label + select side by side */
+    .aas-radius-group {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        gap: 8px !important;
+        width: 100% !important;
+    }
+
+    #avalaunch-radius {
+        flex: 1 1 auto !important;
+        min-width: 0 !important;
+        width: auto !important;
+    }
+
+    /* Search button full width */
+    #aas-search-btn {
+        width: 100% !important;
+        display: block !important;
+        text-align: center !important;
+        padding: 13px 20px !important;
+        box-sizing: border-box !important;
+    }
+
+    /* Account card wraps on overflow */
+    .aas-account-card {
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+    }
+
+    /* Map */
+    .aas-map-card {
+        height: 300px !important;
+    }
+}
+
+/* ============================================================
+   RESPONSIVE — Mobile  (≤ 480 px)
+   ============================================================ */
+@media screen and (max-width: 480px) {
+
+    .aas-card {
+        border-radius: 10px !important;
+        padding: 16px 12px !important;
+    }
+
+    .aas-section-label {
+        font-size: 11px !important;
+        margin-bottom: 10px !important;
+    }
+
+    /* Hide radius label, let select take full row */
+    .aas-radius-label {
+        display: none !important;
+    }
+
+    .aas-radius-group {
+        width: 100% !important;
+    }
+
+    #avalaunch-radius {
+        width: 100% !important;
+        flex: 1 1 100% !important;
+    }
+
+    /* Results header: count above, clear below */
+    .aas-results-header {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 6px !important;
+    }
+
+    /* Account card: info stacked, then actions row below */
+    .aas-account-card {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 10px !important;
+    }
+
+    .aas-account-actions {
+        width: 100% !important;
+        justify-content: space-between !important;
+        display: flex !important;
+        align-items: center !important;
+    }
+
+    .aas-account-name {
+        font-size: 14px !important;
+    }
+
+    /* Map */
+    .aas-map-card {
+        height: 250px !important;
+    }
+
+    .gm-style .gm-style-iw-c {
+        max-width: 220px !important;
+    }
 }

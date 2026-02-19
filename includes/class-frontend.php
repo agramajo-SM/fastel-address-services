@@ -20,7 +20,7 @@ class Avalaunch_Frontend {
 			'avalaunch-frontend-js',
 			AVALAUNCH_PLUGIN_URL . 'assets/js/frontend.js',
 			array( 'jquery' ),
-			'2.1.0',
+			'2.5.0',
 			true
 		);
 
@@ -43,7 +43,7 @@ class Avalaunch_Frontend {
 			'avalaunch-frontend-css',
 			AVALAUNCH_PLUGIN_URL . 'assets/css/style.css',
 			array(),
-			'2.1.0'
+			'2.5.0'
 		);
 	}
 
@@ -92,7 +92,82 @@ class Avalaunch_Frontend {
 				<p class="aas-map-label">Map View Loading...</p>
 			</div>
 
+			<!-- ④ Account Details Modal (hidden, populated by JS) -->
+			<div id="aas-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="aas-modal-title" style="display:none;">
+				<div id="aas-modal">
+					<div id="aas-modal-header">
+						<div>
+							<p id="aas-modal-type"></p>
+							<h2 id="aas-modal-title"></h2>
+						</div>
+						<button id="aas-modal-close" aria-label="Close">&times;</button>
+					</div>
+
+					<div id="aas-modal-body">
+
+						<!-- Distance pill -->
+						<div id="aas-modal-distance-row"></div>
+
+						<!-- Contact -->
+						<div class="aas-modal-section">
+							<h3 class="aas-modal-section-title">Contact</h3>
+							<div class="aas-modal-grid">
+								<div class="aas-modal-field" id="aas-modal-field-phone" style="display:none;">
+									<span class="aas-modal-field-label">Phone</span>
+									<span class="aas-modal-field-value" id="aas-modal-phone"></span>
+								</div>
+								<div class="aas-modal-field" id="aas-modal-field-website" style="display:none;">
+									<span class="aas-modal-field-label">Website</span>
+									<a class="aas-modal-field-value aas-modal-link" id="aas-modal-website" href="#" target="_blank" rel="noopener"></a>
+								</div>
+							</div>
+						</div>
+
+						<!-- Address -->
+						<div class="aas-modal-section">
+							<h3 class="aas-modal-section-title">Billing Address</h3>
+							<div class="aas-modal-grid">
+								<div class="aas-modal-field" id="aas-modal-field-street" style="display:none;">
+									<span class="aas-modal-field-label">Street</span>
+									<span class="aas-modal-field-value" id="aas-modal-street"></span>
+								</div>
+								<div class="aas-modal-field" id="aas-modal-field-city">
+									<span class="aas-modal-field-label">City / State</span>
+									<span class="aas-modal-field-value" id="aas-modal-citystate"></span>
+								</div>
+								<div class="aas-modal-field" id="aas-modal-field-zip" style="display:none;">
+									<span class="aas-modal-field-label">ZIP</span>
+									<span class="aas-modal-field-value" id="aas-modal-zip"></span>
+								</div>
+								<div class="aas-modal-field" id="aas-modal-field-country" style="display:none;">
+									<span class="aas-modal-field-label">Country</span>
+									<span class="aas-modal-field-value" id="aas-modal-country"></span>
+								</div>
+							</div>
+						</div>
+
+						<!-- Company -->
+						<div class="aas-modal-section" id="aas-modal-company-section">
+							<h3 class="aas-modal-section-title">Company</h3>
+							<div class="aas-modal-grid">
+								<div class="aas-modal-field" id="aas-modal-field-industry" style="display:none;">
+									<span class="aas-modal-field-label">Industry</span>
+									<span class="aas-modal-field-value" id="aas-modal-industry"></span>
+								</div>
+								<div class="aas-modal-field" id="aas-modal-field-employees" style="display:none;">
+									<span class="aas-modal-field-label">Employees</span>
+									<span class="aas-modal-field-value" id="aas-modal-employees"></span>
+								</div>
+							</div>
+						</div>
+
+					</div><!-- /#aas-modal-body -->
+
+				</div><!-- /#aas-modal -->
+			</div><!-- /#aas-modal-overlay -->
+
 		</div>
+
 		<?php
 		return ob_get_clean();
 	}

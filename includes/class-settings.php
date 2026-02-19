@@ -168,28 +168,29 @@ class Avalaunch_Settings {
 							var message = data.message || 'Unknown result';
 							var debug = data.debug || {};
 
-							if (response.success) {
+								if (response.success) {
 								$message.text(message).css('color', 'green');
+								// Do NOT show the log on success — it contains the access token.
 							} else {
 								$message.text('Connection Failed: ' + message).css('color', 'red');
-							}
 
-							// Display Debug Log
-							if ( debug ) {
-								$logContainer.show();
-								var logContent = "Status: " + debug.status + "\n";
-								logContent += "Headers:\n" + JSON.stringify(debug.headers, null, 2) + "\n";
-								logContent += "Body:\n";
-								
-								try {
-									// Try to format JSON body if possible
-									var jsonBody = typeof debug.body === 'string' ? JSON.parse(debug.body) : debug.body;
-									logContent += JSON.stringify(jsonBody, null, 2);
-								} catch (e) {
-									logContent += debug.body;
+								// Display Debug Log only on failure
+								var debug = data.debug || {};
+								if ( debug ) {
+									$logContainer.show();
+									var logContent = "Status: " + debug.status + "\n";
+									logContent += "Headers:\n" + JSON.stringify(debug.headers, null, 2) + "\n";
+									logContent += "Body:\n";
+
+									try {
+										var jsonBody = typeof debug.body === 'string' ? JSON.parse(debug.body) : debug.body;
+										logContent += JSON.stringify(jsonBody, null, 2);
+									} catch (e) {
+										logContent += debug.body;
+									}
+
+									$log.text(logContent);
 								}
-								
-								$log.text(logContent);
 							}
 
 						}).fail(function(xhr, status, error) {

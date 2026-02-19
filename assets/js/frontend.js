@@ -187,7 +187,6 @@ function handlePlace(place) {
                     var distBadge = (account.distance_miles !== null && account.distance_miles !== undefined)
                         ? '<span class="aas-distance-badge">' + ARROW_SVG + account.distance_miles + ' mi</span>'
                         : '';
-                    var detailsUrl = account.Id ? 'https://na1.salesforce.com/' + account.Id : '#';
 
                     html += '<div class="aas-account-card">'
                         + '<div class="aas-account-info">'
@@ -196,11 +195,21 @@ function handlePlace(place) {
                         + '</div>'
                         + '<div class="aas-account-actions">'
                         + distBadge
-                        + '<a class="aas-view-details" href="' + escHtml(detailsUrl) + '" target="_blank" rel="noopener">View Details &rarr;</a>'
+                        + '<button class="aas-view-details" data-account="' + escAttr(JSON.stringify(account)) + '">View Details &rarr;</button>'
                         + '</div>'
                         + '</div>';
                 });
                 $results.html(html);
+
+                /* Wire View Details buttons via event delegation */
+                $results.off('click.aas-modal').on('click.aas-modal', '.aas-view-details', function () {
+                    try {
+                        var account = JSON.parse(jQuery(this).attr('data-account'));
+                        openModal(account);
+                    } catch (e) {
+                        console.error('Avalaunch modal: could not parse account data', e);
+                    }
+                });
 
                 /* Place map markers */
                 placeAccountMarkers(accounts, lat, lng, radiusMiles);
@@ -385,4 +394,93 @@ function escHtml(str) {
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;');
+}
+
+function escAttr(str) {
+    if (str === null || str === undefined) { return ''; }
+    return String(str).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+/* ============================================================
+   MODAL
+   ============================================================ */
+
+function setField(fieldId, valueId, value, isLink) {
+    var $field = jQuery('#' + fieldId);
+    var $val = jQuery('#' + valueId);
+    if (value) {
+        $val.text(value);
+        if (isLink) {
+            $val.attr('href', value.match(/^https?:\/\//) ? value : 'https://' + value);
+            $val.text(value.replace(/^https?:\/\//, '').replace(/\/$/, ''));
+        }
+        $field.show();
+    } else {
+        $field.hide();
+    }
+}
+
+function openModal(account) {
+    var $ = jQuery;
+
+    /* Header */
+    $('#aas-modal-type').text(account.Type || '');
+    $('#aas-modal-title').text(account.Name || '');
+
+    /* Distance badge */
+    var $distRow = $('#aas-modal-distance-row');
+    if (account.distance_miles !== null && account.distance_miles !== undefined) {
+        $distRow.html('<span class="aas-distance-badge">' + ARROW_SVG + account.distance_miles + ' mi away</span>');
+    } else {
+        $distRow.empty();
+    }
+
+    /* Contact */
+    setField('aas-modal-field-phone', 'aas-modal-phone', account.Phone, false);
+    setField('aas-modal-field-website', 'aas-modal-website', account.Website, true);
+
+    /* Address */
+    setField('aas-modal-field-street', 'aas-modal-street', account.BillingStreet, false);
+    setField('aas-modal-field-zip', 'aas-modal-zip', account.BillingPostalCode, false);
+    setField('aas-modal-field-country', 'aas-modal-country', account.BillingCountry, false);
+
+    var cityState = [account.BillingCity, account.BillingState].filter(Boolean).join(', ');
+    $('#aas-modal-citystate').text(cityState || '—');
+
+    /* Company */
+    setField('aas-modal-field-industry', 'aas-modal-industry', account.Industry, false);
+    if (account.NumberOfEmployees) {
+        setField('aas-modal-field-employees', 'aas-modal-employees', account.NumberOfEmployees.toLocaleString(), false);
+    } else {
+        $('#aas-modal-field-employees').hide();
+    }
+
+    /* Hide company section entirely if both fields are empty */
+    if (!account.Industry && !account.NumberOfEmployees) {
+        $('#aas-modal-company-section').hide();
+    } else {
+        $('#aas-modal-company-section').show();
+    }
+
+    /* Show overlay as flex (fadeIn sets display:block which breaks centering) */
+    $('#aas-modal-overlay').css({ display: 'flex', opacity: 0 }).animate({ opacity: 1 }, 180);
+    jQuery('body').css('overflow', 'hidden');
+
+    /* Close listeners */
+    $('#aas-modal-close').off('click.aas').on('click.aas', closeModal);
+
+    $('#aas-modal-overlay').off('click.aas').on('click.aas', function (e) {
+        if (e.target === this) { closeModal(); }
+    });
+
+    jQuery(document).off('keydown.aas').on('keydown.aas', function (e) {
+        if (e.key === 'Escape') { closeModal(); }
+    });
+}
+
+function closeModal() {
+    var $overlay = jQuery('#aas-modal-overlay');
+    $overlay.animate({ opacity: 0 }, 160, function () { $overlay.css('display', 'none'); });
+    jQuery('body').css('overflow', '');
+    jQuery(document).off('keydown.aas');
 }
