@@ -37,9 +37,13 @@ window.initAvalaunchMap = function () {
         return;
     }
 
-    /* --- Build the map immediately in the map card --- */
+    /* --- Show or hide map card based on admin toggle --- */
     var mapCard = document.getElementById('aas-map-card');
-    initMap(mapCard);
+    if (avalaunch_vars.show_map === '1') {
+        initMap(mapCard);
+    } else {
+        if (mapCard) { mapCard.style.display = 'none'; }
+    }
 
     /* --- Create address input --- */
     var input = document.createElement('input');
@@ -52,7 +56,8 @@ window.initAvalaunchMap = function () {
     /* --- Attach Google Autocomplete --- */
     var autocomplete = new google.maps.places.Autocomplete(input, {
         fields: ['formatted_address', 'address_components', 'geometry', 'name'],
-        types: ['address']
+        types: ['address'],
+        componentRestrictions: { country: 'us' }  // USA only
     });
 
     autocomplete.addListener('place_changed', function () {
@@ -176,47 +181,35 @@ function handlePlace(place) {
             clearAccountMarkers();
 
             if (response.success && response.data && response.data.length > 0) {
-                var accounts = response.data;
-                var count = accounts.length;
-                $count.text(count + ' ACCOUNT' + (count > 1 ? 'S' : '') + ' WITHIN ' + radiusLabel.toUpperCase());
+                /* ✅ Serviceable — fiber available at this location */
+                $count.text('COVERAGE FOUND WITHIN ' + radiusLabel.toUpperCase());
 
-                /* Build result cards */
-                var html = '';
-                accounts.forEach(function (account) {
-                    var loc = [account.BillingCity, account.BillingState].filter(Boolean).join(', ');
-                    var distBadge = (account.distance_miles !== null && account.distance_miles !== undefined)
-                        ? '<span class="aas-distance-badge">' + ARROW_SVG + account.distance_miles + ' mi</span>'
-                        : '';
+                $results.html(
+                    '<div class="aas-status-card aas-status-available">'
+                    + '<div class="aas-status-icon">✓</div>'
+                    + '<div class="aas-status-text">'
+                    + '<strong>You\'re in our area!</strong>'
+                    + '<p>Fastel offers fiber service at your location. Contact us now to get started.</p>'
+                    + '</div>'
+                    + '</div>'
+                );
 
-                    html += '<div class="aas-account-card">'
-                        + '<div class="aas-account-info">'
-                        + '<div class="aas-account-name">' + escHtml(account.Name) + '</div>'
-                        + (loc ? '<div class="aas-account-loc">' + PIN_SVG + escHtml(loc) + '</div>' : '')
-                        + '</div>'
-                        + '<div class="aas-account-actions">'
-                        + distBadge
-                        + '<button class="aas-view-details" data-account="' + escAttr(JSON.stringify(account)) + '">View Details &rarr;</button>'
-                        + '</div>'
-                        + '</div>';
-                });
-                $results.html(html);
-
-                /* Wire View Details buttons via event delegation */
-                $results.off('click.aas-modal').on('click.aas-modal', '.aas-view-details', function () {
-                    try {
-                        var account = JSON.parse(jQuery(this).attr('data-account'));
-                        openModal(account);
-                    } catch (e) {
-                        console.error('Avalaunch modal: could not parse account data', e);
-                    }
-                });
-
-                /* Place map markers */
-                placeAccountMarkers(accounts, lat, lng, radiusMiles);
+                /* Still place markers on map so user can see coverage visually */
+                placeAccountMarkers(response.data, lat, lng, radiusMiles);
 
             } else if (response.success) {
-                $count.text('0 ACCOUNTS WITHIN ' + radiusLabel.toUpperCase());
-                $results.html('<p class="aas-message">No accounts found within ' + radiusLabel + ' of this address.</p>');
+                /* 🕐 Not serviceable yet */
+                $count.text('NO COVERAGE WITHIN ' + radiusLabel.toUpperCase());
+
+                $results.html(
+                    '<div class="aas-status-card aas-status-coming-soon">'
+                    + '<div class="aas-status-icon">🕐</div>'
+                    + '<div class="aas-status-text">'
+                    + '<strong>Coming Soon</strong>'
+                    + '<p>We don\'t currently offer fiber service at this location, but we\'re expanding. Check back soon!</p>'
+                    + '</div>'
+                    + '</div>'
+                );
                 fitMapToRadius(lat, lng, radiusMiles);
 
             } else {
@@ -363,12 +356,12 @@ function clearAccountMarkers() {
    ============================================================ */
 
 function showResultsCard() {
-    jQuery('#aas-results-card').show();
+    jQuery('#aas-results-card').addClass('aas-visible');
 }
 
 function clearAll(input) {
-    /* Hide results card */
-    jQuery('#aas-results-card').hide();
+    /* Hide results card via CSS class (not display:none — preserves grid layout) */
+    jQuery('#aas-results-card').removeClass('aas-visible');
     jQuery('#avalaunch-services-results').empty();
     jQuery('#aas-results-count').text('');
 

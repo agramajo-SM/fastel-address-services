@@ -20,13 +20,14 @@ class Avalaunch_Frontend {
 			'avalaunch-frontend-js',
 			AVALAUNCH_PLUGIN_URL . 'assets/js/frontend.js',
 			array( 'jquery' ),
-			'2.5.0',
+			'2.9.1',
 			true
 		);
 
 		wp_localize_script( 'avalaunch-frontend-js', 'avalaunch_vars', array(
 			'ajax_url' => admin_url( 'admin-ajax.php' ),
-			'nonce'    => wp_create_nonce( 'avalaunch_search_nonce' )
+			'nonce'    => wp_create_nonce( 'avalaunch_search_nonce' ),
+			'show_map' => ! empty( $options['show_map'] ) ? '1' : '0',
 		) );
 
 		if ( ! empty( $google_api_key ) ) {
@@ -43,7 +44,7 @@ class Avalaunch_Frontend {
 			'avalaunch-frontend-css',
 			AVALAUNCH_PLUGIN_URL . 'assets/css/style.css',
 			array(),
-			'2.5.0'
+			'2.9.4'
 		);
 	}
 
@@ -73,8 +74,8 @@ class Avalaunch_Frontend {
 				</div>
 			</div>
 
-			<!-- ② Results Card (hidden until results arrive) -->
-			<div class="aas-card" id="aas-results-card" style="display:none;">
+			<!-- ② Results Card (visibility controlled by .aas-visible CSS class) -->
+			<div class="aas-card" id="aas-results-card">
 				<div class="aas-results-header">
 					<span id="aas-results-count"></span>
 					<a href="#" id="aas-clear-results">Clear Results</a>
@@ -82,7 +83,7 @@ class Avalaunch_Frontend {
 				<div id="avalaunch-services-results"></div>
 			</div>
 
-			<!-- ③ Map Card -->
+			<!-- ③ Map Card (conditionally shown via toggle in admin settings) -->
 			<div class="aas-card aas-map-card" id="aas-map-card">
 				<svg class="aas-map-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
 					<polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>

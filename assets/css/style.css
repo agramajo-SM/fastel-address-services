@@ -4,23 +4,46 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-/* --- Wrapper --- */
+/*
+ * Reserve scrollbar gutter space ONLY on pages that contain this plugin.
+ * This prevents the ~15px width shift when results load and the page grows.
+ * Uses :has() — supported in Chrome 105+, Firefox 121+, Safari 15.4+.
+ */
+body:has(#avalaunch-address-search-wrapper) {
+    scrollbar-gutter: stable;
+}
+
+/* --- Wrapper: locked width, single column --- */
 #avalaunch-address-search-wrapper {
-    max-width: 960px;
+    width: 100%;
+    max-width: 720px;
+    min-width: 0;
     margin: 0 auto;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 16px;
+    box-sizing: border-box;
+    /* Prevent any child from ever expanding the container width */
+    position: relative;
 }
 
-/* --- Shared Card --- */
+/* --- Shared Card: always full width --- */
 .aas-card {
+    width: 100%;
+    box-sizing: border-box;
     background: #ffffff;
     border: 1px solid #e2e4e9;
     border-radius: 16px;
     padding: 24px 28px;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Remove grid-area assignments — back to plain flow */
+#aas-search-card,
+#aas-results-card,
+#aas-map-card {
+    grid-area: unset;
 }
 
 /* ============================================================
@@ -36,18 +59,28 @@
     color: #374151;
 }
 
-/* Row: [input  |  radius group  |  button] */
+/* Search card: overflow hidden so dropdown doesn't affect card size */
+#aas-search-card {
+    overflow: visible;
+}
+
+/* Row: [input  |  radius group  |  button] — all bottom-aligned */
 .aas-search-row {
     display: flex;
     align-items: flex-end;
+    /* aligns input bottom with select bottom, under label */
     gap: 12px;
+    width: 100%;
+    /* always 100% of card interior */
+    box-sizing: border-box;
 }
 
-/* Address input wrapper — grows to fill available space */
+/* Address input wrapper — fills remaining row space */
 #avalaunch-place-container {
     position: relative;
     flex: 1 1 auto;
     min-width: 0;
+    height: 46px;
 }
 
 /* Search icon */
@@ -66,11 +99,12 @@
     z-index: 1;
 }
 
-/* Text input */
+/* Text input — fixed height */
 #avalaunch-address-input {
     width: 100%;
     box-sizing: border-box;
-    padding: 13px 16px 13px 42px;
+    height: 46px;
+    padding: 0 16px 0 42px;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     font-size: 15px;
     color: #111827;
@@ -116,10 +150,11 @@
     background: #ffffff;
     border: 1.5px solid #d1d5db;
     border-radius: 10px;
-    padding: 10px 40px 10px 14px;
+    height: 46px;
+    padding: 0 40px 0 14px;
     outline: none;
     cursor: pointer;
-    min-width: 140px;
+    min-width: 120px;
     -webkit-appearance: none;
     appearance: none;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
@@ -138,6 +173,8 @@
 /* Search button */
 #aas-search-btn {
     flex-shrink: 0;
+    height: 46px;
+    /* matches input + select height */
     background: #1e4db7;
     color: #ffffff;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -145,11 +182,11 @@
     font-weight: 600;
     border: none;
     border-radius: 10px;
-    padding: 12px 28px;
+    padding: 0 28px;
     cursor: pointer;
     white-space: nowrap;
     transition: background 0.18s, transform 0.1s;
-    line-height: 1.5;
+    line-height: 1;
 }
 
 #aas-search-btn:hover {
@@ -193,7 +230,34 @@
     text-decoration: underline;
 }
 
-/* Account sub-cards */
+/* Results card: always in flow, hidden via opacity until .aas-visible */
+#aas-results-card {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+    /* Height: 0 when hidden so it doesn't push content */
+    max-height: 0;
+    overflow: hidden;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+#aas-results-card.aas-visible {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    max-height: 9999px;
+    overflow: visible;
+    padding: 24px 28px !important;
+    margin: unset !important;
+    border: 1px solid #e2e4e9 !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05) !important;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+
 #avalaunch-services-results {
     display: flex;
     flex-direction: column;
@@ -362,6 +426,10 @@
     overflow: hidden !important;
     padding: 4px !important;
     background: #ffffff !important;
+    /* Ensure dropdown is wide enough to show full addresses */
+    min-width: 380px !important;
+    width: auto !important;
+    box-sizing: border-box !important;
 }
 
 .pac-item {
@@ -374,6 +442,8 @@
     line-height: 1.4 !important;
     margin: 2px 0 !important;
     transition: background 0.12s !important;
+    white-space: nowrap !important;
+    /* Never truncate mid-address */
 }
 
 .pac-item:hover,
@@ -601,6 +671,22 @@ a.aas-modal-link:hover {
 
 
 /* ============================================================
+   RESPONSIVE — Desktop (≥ 769 px)
+   Results + Map side by side — map never shifts when results appear
+   ============================================================ */
+/* ============================================================
+   RESPONSIVE — Desktop
+   Single column always — width never changes
+   ============================================================ */
+@media screen and (min-width: 769px) {
+
+    /* Map card: fixed height on desktop */
+    .aas-map-card {
+        height: 380px !important;
+    }
+}
+
+/* ============================================================
    RESPONSIVE — Tablet  (≤ 768 px)
    ============================================================ */
 @media screen and (max-width: 768px) {
@@ -732,4 +818,59 @@ a.aas-modal-link:hover {
     .gm-style .gm-style-iw-c {
         max-width: 220px !important;
     }
+}
+
+/* ============================================================
+   STATUS CARDS  (serviceable / coming soon)
+   ============================================================ */
+
+.aas-status-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 20px 22px;
+    border-radius: 12px;
+    border: 1.5px solid transparent;
+}
+
+.aas-status-icon {
+    font-size: 28px;
+    line-height: 1;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.aas-status-text strong {
+    display: block;
+    font-size: 17px;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.aas-status-text p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+/* Available / serviceable */
+.aas-status-available {
+    background: #f0fdf4;
+    border-color: #86efac;
+    color: #14532d;
+}
+
+.aas-status-available .aas-status-icon {
+    color: #16a34a;
+}
+
+/* Coming soon / not serviceable */
+.aas-status-coming-soon {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    color: #334155;
+}
+
+.aas-status-coming-soon .aas-status-icon {
+    color: #64748b;
 }
