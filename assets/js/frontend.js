@@ -10,24 +10,6 @@
 })();
 
 /* ============================================================
-   SVG icons
-   ============================================================ */
-var PIN_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="13" height="13"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>';
-var ARROW_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="12" height="12"><path d="M12 2 L2 22 L12 17 L22 22 Z"/></svg>';
-
-/* ============================================================
-   Map state (module-level)
-   ============================================================ */
-var gMap = null;   // google.maps.Map instance
-var gUserMarker = null;   // blue pin for the searched address
-var gRadiusCircle = null;   // translucent circle
-var gAccountMarkers = [];     // markers for SF accounts
-var gInfoWindows = [];     // InfoWindow instances (to close on reopen)
-
-/* Miles → metres conversion */
-var MILES_TO_METRES = 1609.344;
-
-/* ============================================================
    Entry point called by Google Maps callback
    ============================================================ */
 window.initAvalaunchMap = function () {
@@ -37,45 +19,61 @@ window.initAvalaunchMap = function () {
         return;
     }
 
-    /* --- Show or hide map card based on admin toggle --- */
-    var mapCard = document.getElementById('aas-map-card');
-    if (avalaunch_vars.show_map === '1') {
-        initMap(mapCard);
-    } else {
-        if (mapCard) { mapCard.style.display = 'none'; }
+    /* --- Get or Create address input --- */
+    var input = document.getElementById('avalaunch-address-input');
+    if (!input) {
+        input = document.createElement('input');
+        input.type = 'text';
+        input.id = 'avalaunch-address-input';
+        input.setAttribute('autocomplete', 'off');
+        input.setAttribute('placeholder', 'Enter your address to check availability...');
+        container.appendChild(input);
     }
 
-    /* --- Create address input --- */
-    var input = document.createElement('input');
-    input.type = 'text';
-    input.id = 'avalaunch-address-input';
-    input.setAttribute('autocomplete', 'off');
-    input.setAttribute('placeholder', 'Start typing your address…');
-    container.appendChild(input);
-
-    /* --- Attach Google Autocomplete --- */
+    /* --- Attach Google Autocomplete (US addresses only) --- */
     var autocomplete = new google.maps.places.Autocomplete(input, {
-        fields: ['formatted_address', 'address_components', 'geometry', 'name'],
+        fields: ['formatted_address', 'geometry'],
         types: ['address'],
-        componentRestrictions: { country: 'us' }  // USA only
-    });
-
-    autocomplete.addListener('place_changed', function () {
-        handlePlace(autocomplete.getPlace());
+        componentRestrictions: { country: 'us' }
     });
 
     /* --- Search button --- */
     var searchBtn = document.getElementById('aas-search-btn');
+    var selectedPlace = null; // Tracks the last place selected from the dropdown
+
+    // Store the place whenever the user picks from the dropdown
+    autocomplete.addListener('place_changed', function () {
+        selectedPlace = autocomplete.getPlace();
+        if (selectedPlace && selectedPlace.geometry) {
+            handlePlace(selectedPlace);
+        }
+    });
+
     if (searchBtn) {
         searchBtn.addEventListener('click', function () {
-            var place = autocomplete.getPlace();
-            if (place && place.geometry) {
-                handlePlace(place);
-            } else {
-                google.maps.event.trigger(autocomplete, 'place_changed');
+            var inputVal = input.value.trim();
+
+            // Case 1: Input is empty
+            if (!inputVal) {
+                showInlineError('Please enter your address.');
+                return;
             }
+
+            // Case 2: User typed something but never selected from the dropdown
+            if (!selectedPlace || !selectedPlace.geometry) {
+                showInlineError('Please select an address from the suggestions list.');
+                return;
+            }
+
+            // Case 3: Valid place already selected — proceed
+            handlePlace(selectedPlace);
         });
     }
+
+    // Reset selected place if user edits the input manually
+    input.addEventListener('input', function () {
+        selectedPlace = null;
+    });
 
     /* --- Clear Results --- */
     var clearBtn = document.getElementById('aas-clear-results');
@@ -85,83 +83,70 @@ window.initAvalaunchMap = function () {
             clearAll(input);
         });
     }
+
+    /* --- Lead capture form submit (event delegation — rendered dynamically) --- */
+    jQuery(document).on('click', '.aas-nc-submit', function () {
+        var $btn    = jQuery(this);
+        var $group  = $btn.closest('.aas-nc-form-group');
+        var $block  = $btn.closest('.aas-no-coverage-block');
+        var email   = $group.find('.aas-nc-input').val().trim();
+        var address = $block.data('address') || '';
+
+        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            showInlineFormError($group, 'Please enter a valid email address.');
+            return;
+        }
+
+        $btn.prop('disabled', true).text('Sending...');
+
+        jQuery.ajax({
+            url:  avalaunch_vars.ajax_url,
+            type: 'POST',
+            data: {
+                action:  'avalaunch_create_lead',
+                nonce:   avalaunch_vars.nonce,
+                email:   email,
+                address: address
+            },
+            success: function (response) {
+                if (response.success) {
+                    $block.html(
+                        '<div class="aas-lead-success">'
+                        + '<div class="aas-status-icon">✓</div>'
+                        + '<p><strong>You\'re on the list!</strong></p>'
+                        + '<p>We\'ll notify you at <b>' + escHtml(email) + '</b> when fiber arrives at your address.</p>'
+                        + '</div>'
+                    );
+                } else {
+                    $btn.prop('disabled', false).text('Submit');
+                    showInlineFormError($group, response.data.message || 'Something went wrong. Please try again.');
+                }
+            },
+            error: function () {
+                $btn.prop('disabled', false).text('Submit');
+                showInlineFormError($group, 'Connection error. Please try again.');
+            }
+        });
+    });
 };
 
-/* ============================================================
-   Initialise the Google Map (default view, US centered)
-   ============================================================ */
-function initMap(container) {
-    /* Remove the placeholder label once the real map loads */
-    var label = container.querySelector('.aas-map-label');
-    var icon = container.querySelector('.aas-map-icon');
-
-    gMap = new google.maps.Map(container, {
-        center: { lat: 39.5, lng: -98.35 },
-        zoom: 4,
-        mapTypeControl: false,
-        fullscreenControl: false,
-        streetViewControl: false,
-        zoomControlOptions: {
-            position: google.maps.ControlPosition.RIGHT_BOTTOM
-        },
-        styles: [
-            { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] },
-            { featureType: 'transit', elementType: 'labels', stylers: [{ visibility: 'off' }] }
-        ]
-    });
-
-    gMap.addListener('tilesloaded', function () {
-        if (label) { label.style.display = 'none'; }
-        if (icon) { icon.style.display = 'none'; }
-    });
-}
 
 /* ============================================================
-   Handle a selected place → search → render map + cards
+   Handle a selected place → send coordinates → Salesforce
    ============================================================ */
 function handlePlace(place) {
     var $ = jQuery;
 
-    if (!place || !place.address_components) {
-        showResultsCard();
-        $('#avalaunch-services-results').html('<p class="aas-message error">Could not read the selected address. Please try again.</p>');
+    if (!place || !place.geometry || !place.geometry.location) {
         return;
     }
 
-    var radiusSelect = document.getElementById('avalaunch-radius');
-    var radiusMiles = radiusSelect ? parseInt(radiusSelect.value, 10) : 25;
-    var radiusLabel = radiusSelect ? radiusSelect.options[radiusSelect.selectedIndex].text : '25 miles';
-
-    var lat = place.geometry && place.geometry.location ? place.geometry.location.lat() : null;
-    var lng = place.geometry && place.geometry.location ? place.geometry.location.lng() : null;
-
-    var addressData = {
-        formatted_address: place.formatted_address,
-        postal_code: '',
-        locality: '',
-        country: ''
-    };
-    (place.address_components || []).forEach(function (c) {
-        var t = c.types[0];
-        if (t === 'postal_code') { addressData.postal_code = c.long_name; }
-        if (t === 'locality') { addressData.locality = c.long_name; }
-        if (t === 'country') { addressData.country = c.long_name; }
-    });
-
-    if (!lat || !lng) {
-        showResultsCard();
-        $('#avalaunch-services-results').html('<p class="aas-message error">Could not get coordinates for this address. Please try again.</p>');
-        return;
-    }
+    var lat = place.geometry.location.lat();
+    var lng = place.geometry.location.lng();
 
     /* --- Loading state --- */
     showResultsCard();
-    $('#aas-results-count').text('Searching…');
-    $('#avalaunch-services-results').html('<p class="aas-message">Searching within ' + radiusLabel + '…</p>');
-
-    /* --- Place user pin + radius circle immediately --- */
-    placeUserMarker(lat, lng);
-    drawRadiusCircle(lat, lng, radiusMiles);
+    $('#avalaunch-services-results').html('<p class="aas-message">Checking availability for ' + escHtml(place.formatted_address) + '...</p>');
 
     $.ajax({
         url: avalaunch_vars.ajax_url,
@@ -170,310 +155,95 @@ function handlePlace(place) {
             action: 'avalaunch_get_services',
             nonce: avalaunch_vars.nonce,
             lat: lat,
-            lng: lng,
-            radius_miles: radiusMiles,
-            address_data: addressData
+            lng: lng
         },
         success: function (response) {
             var $results = $('#avalaunch-services-results');
-            var $count = $('#aas-results-count');
 
-            clearAccountMarkers();
+            if (response.success) {
+                var data = response.data;
 
-            if (response.success && response.data && response.data.length > 0) {
-                /* ✅ Serviceable — fiber available at this location */
-                $count.text('COVERAGE FOUND WITHIN ' + radiusLabel.toUpperCase());
-
-                $results.html(
-                    '<div class="aas-status-card aas-status-available">'
-                    + '<div class="aas-status-icon">✓</div>'
-                    + '<div class="aas-status-text">'
-                    + '<strong>You\'re in our area!</strong>'
-                    + '<p>Fastel offers fiber service at your location. Contact us now to get started.</p>'
-                    + '</div>'
-                    + '</div>'
-                );
-
-                /* Still place markers on map so user can see coverage visually */
-                placeAccountMarkers(response.data, lat, lng, radiusMiles);
-
-            } else if (response.success) {
-                /* 🕐 Not serviceable yet */
-                $count.text('NO COVERAGE WITHIN ' + radiusLabel.toUpperCase());
-
-                $results.html(
-                    '<div class="aas-status-card aas-status-coming-soon">'
-                    + '<div class="aas-status-icon">🕐</div>'
-                    + '<div class="aas-status-text">'
-                    + '<strong>Coming Soon</strong>'
-                    + '<p>We don\'t currently offer fiber service at this location, but we\'re expanding. Check back soon!</p>'
-                    + '</div>'
-                    + '</div>'
-                );
-                fitMapToRadius(lat, lng, radiusMiles);
-
+                if (data.has_coverage) {
+                    if (data.status === 'Active') {
+                        /* ✅ Service Available */
+                        $results.html(
+                            '<div class="aas-status-card aas-status-available">'
+                            + '<div class="aas-status-icon">✓</div>'
+                            + '<div class="aas-status-text">'
+                            + '<strong>Good News! Fiber is available.</strong>'
+                            //+ '<p>Service is live at <b>' + escHtml(data.project_name) + '</b>.</p>'
+                            + '<a href="/order" class="aas-btn-primary">Order Now</a>'
+                            + '</div>'
+                            + '</div>'
+                        );
+                    } else {
+                        /* 🕐 Coming Soon (Under Construction / Preinstall) */
+                        $results.html(
+                            '<div class="aas-status-card aas-status-coming-soon">'
+                            + '<div class="aas-status-icon">🕐</div>'
+                            + '<div class="aas-status-text">'
+                            + '<strong>We are coming soon!</strong>'
+                            + '<p>Our network is currently under construction at this location.</p>'
+                            + '<button class="aas-btn-secondary">Notify Me When Ready</button>'
+                            + '</div>'
+                            + '</div>'
+                        );
+                    }
+                } else {
+                    /* ❌ No Coverage — Lead Capture Form */
+                    $results.html(
+                        '<div class="aas-no-coverage-block" data-address="' + escAttr(place.formatted_address) + '">'
+                        + '<h2 class="aas-nc-title">We&rsquo;re not in your area yet.</h2>'
+                        + '<p class="aas-nc-subtitle">Enter your email address to receive updates.</p>'
+                        + '<div class="aas-nc-form-container">'
+                        + '<div class="aas-nc-form-group">'
+                        + '<input type="email" class="aas-nc-input" placeholder="Email address" required>'
+                        + '<button class="aas-nc-submit">Submit</button>'
+                        + '</div>'
+                        + '<p class="aas-nc-disclaimer">Your information will be used in line with our <a href="/privacy-policy">Privacy Policy</a>.</p>'
+                        + '</div>'
+                        + '</div>'
+                    );
+                }
             } else {
-                var msg = response.data && response.data.message ? response.data.message : JSON.stringify(response.data);
-                $count.text('Error');
-                $results.html('<p class="aas-message error">Error: ' + escHtml(msg) + '</p>');
+                $results.html('<p class="aas-message error">Error: ' + escHtml(response.data.message) + '</p>');
             }
         },
-        error: function (xhr, status, error) {
-            $('#aas-results-count').text('Error');
-            $('#avalaunch-services-results').html('<p class="aas-message error">Unexpected error: ' + escHtml(error) + '</p>');
+        error: function () {
+            $('#avalaunch-services-results').html('<p class="aas-message error">Connection error. Please try again later.</p>');
         }
     });
-}
-
-/* ============================================================
-   Map helpers
-   ============================================================ */
-
-/**
- * Blue "you are here" marker for the searched address.
- */
-function placeUserMarker(lat, lng) {
-    if (gUserMarker) { gUserMarker.setMap(null); }
-    gUserMarker = new google.maps.Marker({
-        position: { lat: lat, lng: lng },
-        map: gMap,
-        title: 'Your search location',
-        zIndex: 10,
-        icon: {
-            path: google.maps.SymbolPath.CIRCLE,
-            scale: 10,
-            fillColor: '#1e4db7',
-            fillOpacity: 1,
-            strokeColor: '#ffffff',
-            strokeWeight: 2.5
-        }
-    });
-}
-
-/**
- * Translucent indigo circle representing the search radius.
- */
-function drawRadiusCircle(lat, lng, radiusMiles) {
-    if (gRadiusCircle) { gRadiusCircle.setMap(null); }
-    gRadiusCircle = new google.maps.Circle({
-        map: gMap,
-        center: { lat: lat, lng: lng },
-        radius: radiusMiles * MILES_TO_METRES,
-        strokeColor: '#4f4b8a',
-        strokeOpacity: 0.35,
-        strokeWeight: 2,
-        fillColor: '#7c78d4',
-        fillOpacity: 0.08
-    });
-    fitMapToRadius(lat, lng, radiusMiles);
-}
-
-/**
- * Zoom/pan the map so the full radius circle is visible.
- */
-function fitMapToRadius(lat, lng, radiusMiles) {
-    if (!gMap || !gRadiusCircle) { return; }
-    gMap.fitBounds(gRadiusCircle.getBounds());
-}
-
-/**
- * Drop a red marker for each account that has coordinates.
- * Opens an InfoWindow on click with the account name and city.
- */
-function placeAccountMarkers(accounts, userLat, userLng, radiusMiles) {
-    var bounds = new google.maps.LatLngBounds();
-
-    /* Include the search location */
-    bounds.extend({ lat: userLat, lng: userLng });
-
-    accounts.forEach(function (account, idx) {
-        var aLat = account.BillingLatitude;
-        var aLng = account.BillingLongitude;
-
-        if (!aLat || !aLng) { return; } /* skip accounts without coordinates */
-
-        var marker = new google.maps.Marker({
-            position: { lat: aLat, lng: aLng },
-            map: gMap,
-            title: account.Name,
-            zIndex: 5,
-            icon: {
-                path: google.maps.SymbolPath.CIRCLE,
-                scale: 8,
-                fillColor: '#ef4444',
-                fillOpacity: 0.9,
-                strokeColor: '#ffffff',
-                strokeWeight: 2
-            }
-        });
-
-        var loc = [account.BillingCity, account.BillingState].filter(Boolean).join(', ');
-        var dist = account.distance_miles !== null && account.distance_miles !== undefined
-            ? '<span style="color:#4f4b8a;font-weight:600;">' + account.distance_miles + ' mi away</span>'
-            : '';
-
-        var infoWindow = new google.maps.InfoWindow({
-            content: '<div style="font-family:Inter,sans-serif;min-width:160px;padding:4px 2px;">'
-                + '<strong style="font-size:13px;color:#111827;">' + escHtml(account.Name) + '</strong>'
-                + (loc ? '<div style="font-size:12px;color:#6b7280;margin-top:3px;">📍 ' + escHtml(loc) + '</div>' : '')
-                + (dist ? '<div style="font-size:12px;margin-top:4px;">' + dist + '</div>' : '')
-                + '</div>'
-        });
-
-        marker.addListener('click', function () {
-            /* Close all other InfoWindows first */
-            gInfoWindows.forEach(function (iw) { iw.close(); });
-            infoWindow.open(gMap, marker);
-        });
-
-        gAccountMarkers.push(marker);
-        gInfoWindows.push(infoWindow);
-        bounds.extend({ lat: aLat, lng: aLng });
-    });
-
-    /* Fit map to include all markers */
-    if (!bounds.isEmpty()) {
-        gMap.fitBounds(bounds);
-        /* Don't zoom in too far if only one/few markers */
-        var listener = google.maps.event.addListenerOnce(gMap, 'idle', function () {
-            if (gMap.getZoom() > 13) { gMap.setZoom(13); }
-        });
-    }
-}
-
-/**
- * Remove all account markers and InfoWindows from the map.
- */
-function clearAccountMarkers() {
-    gAccountMarkers.forEach(function (m) { m.setMap(null); });
-    gAccountMarkers = [];
-    gInfoWindows.forEach(function (iw) { iw.close(); });
-    gInfoWindows = [];
 }
 
 /* ============================================================
    UI helpers
    ============================================================ */
-
-function showResultsCard() {
-    jQuery('#aas-results-card').addClass('aas-visible');
+function clearAll(input) {
+    jQuery('#aas-results-card').hide();
+    jQuery('#avalaunch-services-results').empty();
+    if (input) { input.value = ''; input.focus(); }
 }
 
-function clearAll(input) {
-    /* Hide results card via CSS class (not display:none — preserves grid layout) */
-    jQuery('#aas-results-card').removeClass('aas-visible');
-    jQuery('#avalaunch-services-results').empty();
-    jQuery('#aas-results-count').text('');
+function showResultsCard() {
+    jQuery('#aas-results-card').show().addClass('aas-visible');
+}
 
-    /* Reset input */
-    if (input) { input.value = ''; input.focus(); }
+function showInlineError(message) {
+    showResultsCard();
+    jQuery('#avalaunch-services-results').html('<p class="aas-message error">' + escHtml(message) + '</p>');
+}
 
-    /* Clear map overlays, keep map visible */
-    clearAccountMarkers();
-    if (gUserMarker) { gUserMarker.setMap(null); gUserMarker = null; }
-    if (gRadiusCircle) { gRadiusCircle.setMap(null); gRadiusCircle = null; }
-
-    /* Reset map to default US view */
-    if (gMap) {
-        gMap.setCenter({ lat: 39.5, lng: -98.35 });
-        gMap.setZoom(4);
-    }
+function showInlineFormError($group, message) {
+    $group.find('.aas-nc-form-error').remove();
+    $group.append('<p class="aas-nc-form-error aas-message error">' + escHtml(message) + '</p>');
 }
 
 function escHtml(str) {
-    if (str === null || str === undefined) { return ''; }
-    return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
+    if (!str) return '';
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 function escAttr(str) {
-    if (str === null || str === undefined) { return ''; }
-    return String(str).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-}
-
-/* ============================================================
-   MODAL
-   ============================================================ */
-
-function setField(fieldId, valueId, value, isLink) {
-    var $field = jQuery('#' + fieldId);
-    var $val = jQuery('#' + valueId);
-    if (value) {
-        $val.text(value);
-        if (isLink) {
-            $val.attr('href', value.match(/^https?:\/\//) ? value : 'https://' + value);
-            $val.text(value.replace(/^https?:\/\//, '').replace(/\/$/, ''));
-        }
-        $field.show();
-    } else {
-        $field.hide();
-    }
-}
-
-function openModal(account) {
-    var $ = jQuery;
-
-    /* Header */
-    $('#aas-modal-type').text(account.Type || '');
-    $('#aas-modal-title').text(account.Name || '');
-
-    /* Distance badge */
-    var $distRow = $('#aas-modal-distance-row');
-    if (account.distance_miles !== null && account.distance_miles !== undefined) {
-        $distRow.html('<span class="aas-distance-badge">' + ARROW_SVG + account.distance_miles + ' mi away</span>');
-    } else {
-        $distRow.empty();
-    }
-
-    /* Contact */
-    setField('aas-modal-field-phone', 'aas-modal-phone', account.Phone, false);
-    setField('aas-modal-field-website', 'aas-modal-website', account.Website, true);
-
-    /* Address */
-    setField('aas-modal-field-street', 'aas-modal-street', account.BillingStreet, false);
-    setField('aas-modal-field-zip', 'aas-modal-zip', account.BillingPostalCode, false);
-    setField('aas-modal-field-country', 'aas-modal-country', account.BillingCountry, false);
-
-    var cityState = [account.BillingCity, account.BillingState].filter(Boolean).join(', ');
-    $('#aas-modal-citystate').text(cityState || '—');
-
-    /* Company */
-    setField('aas-modal-field-industry', 'aas-modal-industry', account.Industry, false);
-    if (account.NumberOfEmployees) {
-        setField('aas-modal-field-employees', 'aas-modal-employees', account.NumberOfEmployees.toLocaleString(), false);
-    } else {
-        $('#aas-modal-field-employees').hide();
-    }
-
-    /* Hide company section entirely if both fields are empty */
-    if (!account.Industry && !account.NumberOfEmployees) {
-        $('#aas-modal-company-section').hide();
-    } else {
-        $('#aas-modal-company-section').show();
-    }
-
-    /* Show overlay as flex (fadeIn sets display:block which breaks centering) */
-    $('#aas-modal-overlay').css({ display: 'flex', opacity: 0 }).animate({ opacity: 1 }, 180);
-    jQuery('body').css('overflow', 'hidden');
-
-    /* Close listeners */
-    $('#aas-modal-close').off('click.aas').on('click.aas', closeModal);
-
-    $('#aas-modal-overlay').off('click.aas').on('click.aas', function (e) {
-        if (e.target === this) { closeModal(); }
-    });
-
-    jQuery(document).off('keydown.aas').on('keydown.aas', function (e) {
-        if (e.key === 'Escape') { closeModal(); }
-    });
-}
-
-function closeModal() {
-    var $overlay = jQuery('#aas-modal-overlay');
-    $overlay.animate({ opacity: 0 }, 160, function () { $overlay.css('display', 'none'); });
-    jQuery('body').css('overflow', '');
-    jQuery(document).off('keydown.aas');
+    if (!str) return '';
+    return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }

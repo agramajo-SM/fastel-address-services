@@ -71,15 +71,8 @@ class Avalaunch_Settings {
 			array( 'field' => 'sf_custom_login_url' )
 		);
 
-		add_settings_field(
-			'show_map',
-			'Show Map on Frontend',
-			array( $this, 'render_toggle_field' ),
-			'avalaunch_address_services',
-			'avalaunch_api_settings',
-			array( 'field' => 'show_map' )
-		);
 	}
+
 
 	public function render_input_field( $args ) {
 		$options = get_option( 'avalaunch_options' );
@@ -94,25 +87,6 @@ class Avalaunch_Settings {
 		);
 	}
 
-	public function render_toggle_field( $args ) {
-		$options = get_option( 'avalaunch_options' );
-		$field   = $args['field'];
-		$checked = ! empty( $options[ $field ] ) ? 'checked' : '';
-		?>
-		<label class="avalaunch-toggle">
-			<input type="checkbox" name="avalaunch_options[<?php echo esc_attr( $field ); ?>]" value="1" <?php echo $checked; ?>>
-			<span class="avalaunch-toggle-slider"></span>
-		</label>
-		<style>
-			.avalaunch-toggle { position:relative; display:inline-block; width:44px; height:24px; }
-			.avalaunch-toggle input { opacity:0; width:0; height:0; }
-			.avalaunch-toggle-slider { position:absolute; inset:0; background:#ccc; border-radius:34px; cursor:pointer; transition:.3s; }
-			.avalaunch-toggle-slider:before { content:""; position:absolute; height:18px; width:18px; left:3px; bottom:3px; background:#fff; border-radius:50%; transition:.3s; }
-			.avalaunch-toggle input:checked + .avalaunch-toggle-slider { background:#2271b1; }
-			.avalaunch-toggle input:checked + .avalaunch-toggle-slider:before { transform:translateX(20px); }
-		</style>
-		<?php
-	}
 
 	public function render_select_field( $args ) {
 		$options = get_option( 'avalaunch_options' );

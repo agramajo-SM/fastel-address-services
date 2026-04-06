@@ -874,3 +874,122 @@ a.aas-modal-link:hover {
 .aas-status-coming-soon .aas-status-icon {
     color: #64748b;
 }
+
+/* ============================================================
+   NO COVERAGE BLOCK (Lead Capture Form)
+   ============================================================ */
+.aas-no-coverage-block {
+    text-align: center;
+    padding: 48px 24px;
+    background: #eff4fa;
+    border-radius: 16px;
+    font-family: 'Inter', -apple-system, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.aas-nc-title {
+    font-size: 36px;
+    font-weight: 600;
+    color: #202124;
+    margin: 0 0 14px;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+}
+.aas-nc-subtitle {
+    font-size: 20px;
+    font-weight: 400;
+    color: #3c4043;
+    margin: 0 0 36px;
+}
+.aas-nc-form-container {
+    width: 100%;
+    max-width: 580px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+.aas-nc-form-group {
+    display: flex;
+    width: 100%;
+    background: #ffffff;
+    border-radius: 60px;
+    padding: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+    margin-bottom: 20px;
+    box-sizing: border-box;
+    border: 1px solid #e2e4e9;
+}
+.aas-nc-input {
+    flex: 1;
+    border: none !important;
+    background: transparent !important;
+    padding: 14px 24px !important;
+    font-size: 16px !important;
+    outline: none !important;
+    color: #3c4043 !important;
+    min-width: 0 !important;
+    box-shadow: none !important;
+    height: auto !important;
+}
+.aas-nc-input::placeholder {
+    color: #9ca3af;
+}
+.aas-nc-submit {
+    background: #1a73e8 !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 40px !important;
+    padding: 0 36px !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    transition: background 0.2s !important;
+    flex-shrink: 0 !important;
+    height: 48px !important;
+    line-height: 48px !important;
+}
+.aas-nc-submit:hover {
+    background: #1557b0 !important;
+}
+.aas-nc-disclaimer {
+    font-size: 13px;
+    color: #5f6368;
+    margin: 0;
+    text-align: left;
+    padding-left: 12px;
+}
+.aas-nc-disclaimer a {
+    color: #1a73e8;
+    text-decoration: underline;
+}
+
+@media screen and (max-width: 520px) {
+    .aas-nc-title { font-size: 28px; }
+    .aas-nc-subtitle { font-size: 16px; }
+    .aas-nc-form-group {
+        flex-direction: column;
+        border-radius: 16px;
+        background: transparent;
+        box-shadow: none;
+        padding: 0;
+        gap: 12px;
+        border: none;
+    }
+    .aas-nc-input {
+        background: #ffffff !important;
+        border-radius: 12px !important;
+        width: 100% !important;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.05) !important;
+        border: 1px solid #e2e4e9 !important;
+    }
+    .aas-nc-submit {
+        width: 100% !important;
+        border-radius: 12px !important;
+    }
+    .aas-nc-disclaimer {
+        padding-left: 0;
+        text-align: center;
+        width: 100%;
+    }
+}
