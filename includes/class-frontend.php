@@ -72,6 +72,70 @@ class Avalaunch_Frontend {
 				</div>
 			</div>
 
+			<!-- Contact Modal -->
+			<div id="aas-contact-modal-overlay" style="display:none;">
+				<div id="aas-contact-modal">
+
+					<!-- Close -->
+					<button id="aas-contact-modal-close" aria-label="Close">&times;</button>
+
+					<!-- Top Badge -->
+					<div class="aas-cm-badge">
+						<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+						Fiber Available at Your Address
+					</div>
+
+					<!-- Headline -->
+					<h2 class="aas-cm-title">Ready to Get Started?</h2>
+					<p class="aas-cm-subtitle">Our team is standing by to connect you. Reach out through any of the options below.</p>
+
+					<!-- Divider -->
+					<div class="aas-cm-divider"></div>
+
+					<!-- Contact Options -->
+					<div class="aas-cm-grid">
+
+						<!-- Phone card -->
+						<div class="aas-cm-option">
+							<div class="aas-cm-icon-wrap aas-cm-icon-blue">
+								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+								</svg>
+							</div>
+							<div class="aas-cm-option-body">
+								<span class="aas-cm-option-label">Call Us</span>
+								<a href="tel:8013223278" class="aas-cm-option-primary">801-322-3278 <span class="aas-cm-option-tag">Local</span></a>
+								<a href="tel:8556327835" class="aas-cm-option-secondary">855-632-7835 <span class="aas-cm-option-tag">Toll-Free</span></a>
+							</div>
+							<a href="tel:8013223278" class="aas-cm-cta-btn">Call Now</a>
+						</div>
+
+						<!-- Email card -->
+						<div class="aas-cm-option">
+							<div class="aas-cm-icon-wrap aas-cm-icon-blue">
+								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+								</svg>
+							</div>
+							<div class="aas-cm-option-body">
+								<span class="aas-cm-option-label">Email Us</span>
+								<a href="mailto:customerservice@fastel.com" class="aas-cm-option-primary" style="font-size:14px;">customerservice@fastel.com</a>
+								<!-- <span class="aas-cm-option-secondary" style="font-size:12px; opacity:.6;">We reply within 1 business day</span> -->
+							</div>
+							<a href="mailto:customerservice@fastel.com" class="aas-cm-cta-btn">Send Email</a>
+						</div>
+
+					</div>
+
+					<!-- Footer note -->
+					<!-- <p class="aas-cm-footer-note">
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+						Mon – Fri, 8 AM – 6 PM MT
+					</p> -->
+
+				</div>
+			</div>
+
 		</div>
 		<?php
 		return ob_get_clean();

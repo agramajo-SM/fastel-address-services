@@ -84,12 +84,31 @@ window.initAvalaunchMap = function () {
         });
     }
 
+    // Move the contact modal overlay to <body> so it is never trapped
+    // inside a parent stacking context (transform, filter, will-change, etc.)
+    // that would prevent it from appearing above the site navbar.
+    var $overlay = jQuery('#aas-contact-modal-overlay');
+    if ($overlay.length && $overlay.parent().attr('id') !== 'aas-body-root') {
+        jQuery('body').append($overlay.detach());
+    }
+
+    jQuery(document).on('click', '#aas-contact-modal-close, #aas-contact-modal-overlay', function (e) {
+        if (e.target === this) {
+            jQuery('#aas-contact-modal-overlay').fadeOut();
+        }
+    });
+
+    jQuery(document).on('click', '.aas-order-now-btn', function (e) {
+        e.preventDefault();
+        jQuery('#aas-contact-modal-overlay').css('display', 'flex').hide().fadeIn();
+    });
+
     /* --- Lead capture form submit (event delegation — rendered dynamically) --- */
     jQuery(document).on('click', '.aas-nc-submit', function () {
-        var $btn    = jQuery(this);
-        var $group  = $btn.closest('.aas-nc-form-group');
-        var $block  = $btn.closest('.aas-no-coverage-block');
-        var email   = $group.find('.aas-nc-input').val().trim();
+        var $btn = jQuery(this);
+        var $group = $btn.closest('.aas-nc-form-group');
+        var $block = $btn.closest('.aas-no-coverage-block');
+        var email = $group.find('.aas-nc-input').val().trim();
         var address = $block.data('address') || '';
 
         if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -100,12 +119,12 @@ window.initAvalaunchMap = function () {
         $btn.prop('disabled', true).text('Sending...');
 
         jQuery.ajax({
-            url:  avalaunch_vars.ajax_url,
+            url: avalaunch_vars.ajax_url,
             type: 'POST',
             data: {
-                action:  'avalaunch_create_lead',
-                nonce:   avalaunch_vars.nonce,
-                email:   email,
+                action: 'avalaunch_create_lead',
+                nonce: avalaunch_vars.nonce,
+                email: email,
                 address: address
             },
             success: function (response) {
@@ -172,7 +191,7 @@ function handlePlace(place) {
                             + '<div class="aas-status-text">'
                             + '<strong>Good News! Fiber is available.</strong>'
                             //+ '<p>Service is live at <b>' + escHtml(data.project_name) + '</b>.</p>'
-                            + '<a href="/order" class="aas-btn-primary">Order Now</a>'
+                            + '<a href="#" class="aas-btn-primary aas-order-now-btn" style="color:#e97b37; text-decoration:none; font-weight:600; font-size:15px; margin-top:8px; display:inline-block;">Order Now</a>'
                             + '</div>'
                             + '</div>'
                         );
@@ -193,15 +212,8 @@ function handlePlace(place) {
                     /* ❌ No Coverage — Lead Capture Form */
                     $results.html(
                         '<div class="aas-no-coverage-block" data-address="' + escAttr(place.formatted_address) + '">'
-                        + '<h2 class="aas-nc-title">We&rsquo;re not in your area yet.</h2>'
-                        + '<p class="aas-nc-subtitle">Enter your email address to receive updates.</p>'
-                        + '<div class="aas-nc-form-container">'
-                        + '<div class="aas-nc-form-group">'
-                        + '<input type="email" class="aas-nc-input" placeholder="Email address" required>'
-                        + '<button class="aas-nc-submit">Submit</button>'
-                        + '</div>'
-                        + '<p class="aas-nc-disclaimer">Your information will be used in line with our <a href="/privacy-policy">Privacy Policy</a>.</p>'
-                        + '</div>'
+                        + '<h2 class="aas-nc-title">We haven&rsquo;t made it to your area yet.</h2>'
+                        + '<p class="aas-nc-subtitle"> But we&rsquo;re working on it!</p>'
                         + '</div>'
                     );
                 }
