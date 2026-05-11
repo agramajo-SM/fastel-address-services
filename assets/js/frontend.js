@@ -32,7 +32,7 @@ window.initAvalaunchMap = function () {
 
     /* --- Attach Google Autocomplete (US addresses only) --- */
     var autocomplete = new google.maps.places.Autocomplete(input, {
-        fields: ['formatted_address', 'geometry'],
+        fields: ['formatted_address', 'address_components'],
         types: ['address'],
         componentRestrictions: { country: 'us' }
     });
@@ -41,12 +41,11 @@ window.initAvalaunchMap = function () {
     var searchBtn = document.getElementById('aas-search-btn');
     var selectedPlace = null; // Tracks the last place selected from the dropdown
 
-    // Store the place whenever the user picks from the dropdown
+    // Store the place whenever the user picks from the dropdown.
+    // Do NOT auto-search here — wait for the button click so the user
+    // can optionally fill in the Unit / Apt field first.
     autocomplete.addListener('place_changed', function () {
         selectedPlace = autocomplete.getPlace();
-        if (selectedPlace && selectedPlace.geometry) {
-            handlePlace(selectedPlace);
-        }
     });
 
     if (searchBtn) {
@@ -60,7 +59,7 @@ window.initAvalaunchMap = function () {
             }
 
             // Case 2: User typed something but never selected from the dropdown
-            if (!selectedPlace || !selectedPlace.geometry) {
+            if (!selectedPlace || !selectedPlace.address_components) {
                 showInlineError('Please select an address from the suggestions list.');
                 return;
             }
@@ -70,7 +69,8 @@ window.initAvalaunchMap = function () {
         });
     }
 
-    // Reset selected place if user edits the input manually
+    // Reset selected place if user edits the address input manually.
+    // The unit field is intentionally excluded — editing it should not clear the selection.
     input.addEventListener('input', function () {
         selectedPlace = null;
     });
@@ -103,78 +103,82 @@ window.initAvalaunchMap = function () {
         jQuery('#aas-contact-modal-overlay').css('display', 'flex').hide().fadeIn();
     });
 
-    /* --- Lead capture form submit (event delegation — rendered dynamically) --- */
-    jQuery(document).on('click', '.aas-nc-submit', function () {
-        var $btn = jQuery(this);
-        var $group = $btn.closest('.aas-nc-form-group');
-        var $block = $btn.closest('.aas-no-coverage-block');
-        var email = $group.find('.aas-nc-input').val().trim();
-        var address = $block.data('address') || '';
-
-        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-            showInlineFormError($group, 'Please enter a valid email address.');
-            return;
-        }
-
-        $btn.prop('disabled', true).text('Sending...');
-
-        jQuery.ajax({
-            url: avalaunch_vars.ajax_url,
-            type: 'POST',
-            data: {
-                action: 'avalaunch_create_lead',
-                nonce: avalaunch_vars.nonce,
-                email: email,
-                address: address
-            },
-            success: function (response) {
-                if (response.success) {
-                    $block.html(
-                        '<div class="aas-lead-success">'
-                        + '<div class="aas-status-icon">✓</div>'
-                        + '<p><strong>You\'re on the list!</strong></p>'
-                        + '<p>We\'ll notify you at <b>' + escHtml(email) + '</b> when fiber arrives at your address.</p>'
-                        + '</div>'
-                    );
-                } else {
-                    $btn.prop('disabled', false).text('Submit');
-                    showInlineFormError($group, response.data.message || 'Something went wrong. Please try again.');
-                }
-            },
-            error: function () {
-                $btn.prop('disabled', false).text('Submit');
-                showInlineFormError($group, 'Connection error. Please try again.');
-            }
-        });
-    });
 };
 
 
 /* ============================================================
-   Handle a selected place → send coordinates → Salesforce
+   Handle a selected place → parse address → query Salesforce
    ============================================================ */
 function handlePlace(place) {
     var $ = jQuery;
 
-    if (!place || !place.geometry || !place.geometry.location) {
+    if (!place || !place.address_components) {
+        showInlineError('Please select an address from the suggestions list.');
         return;
     }
 
-    var lat = place.geometry.location.lat();
-    var lng = place.geometry.location.lng();
+    // --- Extract street number and route from Google address_components ---
+    var streetNumber = '';
+    var route        = '';
+
+    for (var i = 0; i < place.address_components.length; i++) {
+        var comp  = place.address_components[i];
+        var types = comp.types;
+        if (types.indexOf('street_number') !== -1) { streetNumber = comp.long_name; }
+        if (types.indexOf('route')         !== -1) { route        = comp.long_name; }
+    }
+
+    if (!streetNumber || !route) {
+        showInlineError('Please select a specific street address (not just a city or zip).');
+        return;
+    }
+
+    // Extract the first two non-directional, non-suffix words from the route.
+    // e.g. "S Creek Run Way" → keyword1='Creek', keyword2='Run'
+    // e.g. "Main St"        → keyword1='Main',  keyword2=''
+    var directionals = ['N', 'S', 'E', 'W', 'NE', 'NW', 'SE', 'SW',
+                        'North', 'South', 'East', 'West'];
+    var suffixes     = ['St', 'Ave', 'Blvd', 'Dr', 'Way', 'Rd', 'Ln',
+                        'Ct', 'Pl', 'Trl', 'Pkwy', 'Cir', 'Loop',
+                        'Street', 'Avenue', 'Boulevard', 'Drive', 'Road',
+                        'Lane', 'Court', 'Place', 'Trail', 'Parkway', 'Circle'];
+    var skip         = directionals.concat(suffixes);
+    var routeWords   = route.split(' ');
+    var keywords     = [];
+    for (var j = 0; j < routeWords.length && keywords.length < 2; j++) {
+        var word = routeWords[j];
+        if (skip.indexOf(word) === -1 && word.length > 1) {
+            keywords.push(word);
+        }
+    }
+    // Fallback: if nothing usable found, use the first word verbatim.
+    if (keywords.length === 0) { keywords.push(routeWords[0]); }
+
+    var streetKeyword  = keywords[0] || '';
+    var streetKeyword2 = keywords[1] || '';
+
+    var unit = (document.getElementById('avalaunch-unit-input') || {}).value || '';
+    unit = unit.trim();
+
+    var displayAddress = escHtml(place.formatted_address);
+    if (unit) {
+        displayAddress += ' <span style="color:#6b7280;">Unit ' + escHtml(unit) + '</span>';
+    }
 
     /* --- Loading state --- */
     showResultsCard();
-    $('#avalaunch-services-results').html('<p class="aas-message">Checking availability for ' + escHtml(place.formatted_address) + '...</p>');
+    $('#avalaunch-services-results').html('<p class="aas-message">Checking availability for ' + displayAddress + '...</p>');
 
     $.ajax({
         url: avalaunch_vars.ajax_url,
         type: 'POST',
         data: {
-            action: 'avalaunch_get_services',
-            nonce: avalaunch_vars.nonce,
-            lat: lat,
-            lng: lng
+            action:          'avalaunch_get_services',
+            nonce:           avalaunch_vars.nonce,
+            street_number:   streetNumber,
+            street_keyword:  streetKeyword,
+            street_keyword2: streetKeyword2,
+            unit:            unit
         },
         success: function (response) {
             var $results = $('#avalaunch-services-results');
@@ -183,37 +187,27 @@ function handlePlace(place) {
                 var data = response.data;
 
                 if (data.has_coverage) {
-                    if (data.status === 'Active') {
-                        /* ✅ Service Available */
-                        $results.html(
-                            '<div class="aas-status-card aas-status-available">'
-                            + '<div class="aas-status-icon">✓</div>'
-                            + '<div class="aas-status-text">'
-                            + '<strong>Good News! Fiber is available.</strong>'
-                            //+ '<p>Service is live at <b>' + escHtml(data.project_name) + '</b>.</p>'
-                            + '<a href="#" class="aas-btn-primary aas-order-now-btn" style="color:#e97b37; text-decoration:none; font-weight:600; font-size:15px; margin-top:8px; display:inline-block;">Order Now</a>'
-                            + '</div>'
-                            + '</div>'
-                        );
-                    } else {
-                        /* 🕐 Coming Soon (Under Construction / Preinstall) */
-                        $results.html(
-                            '<div class="aas-status-card aas-status-coming-soon">'
-                            + '<div class="aas-status-icon">🕐</div>'
-                            + '<div class="aas-status-text">'
-                            + '<strong>We are coming soon!</strong>'
-                            + '<p>Our network is currently under construction at this location.</p>'
-                            + '<button class="aas-btn-secondary">Notify Me When Ready</button>'
-                            + '</div>'
-                            + '</div>'
-                        );
-                    }
-                } else {
-                    /* ❌ No Coverage — Lead Capture Form */
+                    /* ✅ Service Available — show result card then open contact modal */
                     $results.html(
-                        '<div class="aas-no-coverage-block" data-address="' + escAttr(place.formatted_address) + '">'
-                        + '<h2 class="aas-nc-title">We haven&rsquo;t made it to your area yet.</h2>'
-                        + '<p class="aas-nc-subtitle"> But we&rsquo;re working on it!</p>'
+                        '<div class="aas-status-card aas-status-available">'
+                        + '<div class="aas-status-icon">✓</div>'
+                        + '<div class="aas-status-text">'
+                        + '<strong>Good News! Fiber is available at your address.</strong>'
+                        + '<a href="#" class="aas-btn-primary aas-order-now-btn" style="color:#e97b37; text-decoration:none; font-weight:600; font-size:15px; margin-top:8px; display:inline-block;">Connect With Us</a>'
+                        + '</div>'
+                        + '</div>'
+                    );
+                    // Automatically open the contact modal.
+                    jQuery('#aas-contact-modal-overlay').css('display', 'flex').hide().fadeIn();
+                } else {
+                    /* ❌ No Coverage */
+                    $results.html(
+                        '<div class="aas-status-card aas-status-no-coverage">'
+                        + '<div class="aas-status-icon">✕</div>'
+                        + '<div class="aas-status-text">'
+                        + '<strong>No service available at this address.</strong>'
+                        + '<p>We haven\'t reached your area yet, but we\'re expanding. Call us at <a href="tel:8013223278" style="color:inherit;font-weight:600;">801-322-3278</a> or email <a href="mailto:customerservice@fastel.com" style="color:inherit;font-weight:600;">customerservice@fastel.com</a> for more information.</p>'
+                        + '</div>'
                         + '</div>'
                     );
                 }
@@ -243,11 +237,6 @@ function showResultsCard() {
 function showInlineError(message) {
     showResultsCard();
     jQuery('#avalaunch-services-results').html('<p class="aas-message error">' + escHtml(message) + '</p>');
-}
-
-function showInlineFormError($group, message) {
-    $group.find('.aas-nc-form-error').remove();
-    $group.append('<p class="aas-nc-form-error aas-message error">' + escHtml(message) + '</p>');
 }
 
 function escHtml(str) {

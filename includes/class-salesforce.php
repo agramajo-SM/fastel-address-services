@@ -8,12 +8,13 @@ class Avalaunch_Salesforce {
 	private $token_transient_key = 'avalaunch_sf_access_token';
 
 	/**
-	 * Busca cobertura basándose en coordenadas exactas (Lat/Lng).
-	 * Usa un radio de 0.01 millas (~16 metros) para tolerar mínimas diferencias
-	 * de precisión entre el geocoding de Google Maps y el de Salesforce, garantizando
-	 * que el resultado corresponde al mismo punto físico en el mundo real.
+	 * Searches for coverage by matching the Asset Name against the street number
+	 * and the first two distinctive words of the street name.
+	 * Example: street_number='10123', keyword1='Creek', keyword2='Run' matches
+	 * "10123 S Creek Run Way Unit F107" regardless of directional prefix.
+	 * Two keywords make false positives practically impossible.
 	 */
-	public function get_services_by_coordinates( $lat, $lng ) {
+	public function get_services_by_address( $street_number, $street_keyword, $unit = '', $street_keyword2 = '' ) {
 		$access_token = $this->get_access_token();
 
 		if ( is_wp_error( $access_token ) ) {
@@ -22,18 +23,32 @@ class Avalaunch_Salesforce {
 
 		$instance_url = get_transient( 'avalaunch_sf_instance_url' );
 
-		// Radio de 0.01 millas (~16 metros): tolerancia mínima para diferencias de
-		// precisión entre el geocoding de Google y el de Salesforce. En la práctica
-		// funciona como una coincidencia puntual (mismo edificio/dirección).
-		$query = sprintf(
-			"SELECT Id, Name, Status__c, Internet__c, BuildingType__c, Address__Street__s, Address__City__s, Address__PostalCode__s " .
-			"FROM Residential_Project__c " .
-			"WHERE DISTANCE(Address__c, GEOLOCATION(%f, %f), 'mi') < 0.01 " .
-			"ORDER BY DISTANCE(Address__c, GEOLOCATION(%f, %f), 'mi') ASC " .
-			"LIMIT 1",
-			$lat, $lng,
-			$lat, $lng
-		);
+		// Sanitize inputs for safe SOQL string interpolation.
+		$safe_number   = str_replace( "'", "\\'", $street_number );
+		$safe_keyword  = str_replace( "'", "\\'", $street_keyword );
+
+		// RecordTypeId that identifies valid service assets.
+		$record_type_id = '012Rb0000018JEbIAM';
+
+		// Match street number prefix + first keyword.
+		$where = "RecordTypeId = '" . $record_type_id . "'"
+			   . " AND Commercial_Residential_Project__r.Status__c <> 'Closed'"
+			   . " AND Name LIKE '" . $safe_number . "%'"
+			   . " AND Name LIKE '%" . $safe_keyword . "%'";
+
+		// Add second keyword if available — significantly reduces false positives.
+		if ( ! empty( $street_keyword2 ) ) {
+			$safe_keyword2 = str_replace( "'", "\\'", $street_keyword2 );
+			$where        .= " AND Name LIKE '%" . $safe_keyword2 . "%'";
+		}
+
+		// If a unit number was provided, narrow to that specific unit.
+		if ( ! empty( $unit ) ) {
+			$safe_unit = str_replace( "'", "\\'", $unit );
+			$where    .= " AND Unit__c = '" . $safe_unit . "'";
+		}
+
+		$query = "SELECT Id, Name, Unit__c FROM Asset WHERE " . $where . " LIMIT 1";
 
 		return $this->execute_query( $instance_url, $query, $access_token );
 	}
@@ -123,17 +138,12 @@ class Avalaunch_Salesforce {
 
 		$record = $data['records'][0];
 
-		// Devolvemos una estructura limpia para el buscador estilo Fiber
+		// A record exists under the correct RecordType with an active project → service is available.
 		return array(
 			'has_coverage' => true,
 			'id'           => $record['Id'],
-			'project_name' => $record['Name'],
-			'status'       => trim($record['Status__c']), // 'Active', 'Under Construction', etc.
-			'street'       => $record['Address__Street__s'],
-			'city'         => $record['Address__City__s'],
-			'zip'          => $record['Address__PostalCode__s'],
-			'details'      => $record['Internet__c'], // Instrucciones o detalles del servicio
-			'type'         => $record['BuildingType__c']
+			'name'         => $record['Name'],
+			'unit'         => isset( $record['Unit__c'] ) ? $record['Unit__c'] : '',
 		);
 	}
 

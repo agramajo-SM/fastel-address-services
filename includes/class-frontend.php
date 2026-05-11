@@ -60,6 +60,7 @@ class Avalaunch_Frontend {
 					<div id="avalaunch-place-container">
 						<input type="text" id="avalaunch-address-input" placeholder="Enter your address...">
 					</div>
+					<input type="text" id="avalaunch-unit-input" class="aas-unit-input" placeholder="Unit / Apt" aria-label="Unit or apartment number (optional)">
 					<button id="aas-search-btn" type="button">Check Coverage</button>
 				</div>
 			</div>
@@ -144,15 +145,17 @@ class Avalaunch_Frontend {
 	public function ajax_get_services() {
 		check_ajax_referer( 'avalaunch_search_nonce', 'nonce' );
 
-		$lat = isset( $_POST['lat'] ) ? floatval( $_POST['lat'] ) : null;
-		$lng = isset( $_POST['lng'] ) ? floatval( $_POST['lng'] ) : null;
+		$street_number   = isset( $_POST['street_number'] )   ? sanitize_text_field( $_POST['street_number'] )   : '';
+		$street_keyword  = isset( $_POST['street_keyword'] )  ? sanitize_text_field( $_POST['street_keyword'] )  : '';
+		$street_keyword2 = isset( $_POST['street_keyword2'] ) ? sanitize_text_field( $_POST['street_keyword2'] ) : '';
+		$unit            = isset( $_POST['unit'] )            ? sanitize_text_field( $_POST['unit'] )            : '';
 
-		if ( is_null( $lat ) || is_null( $lng ) ) {
-			wp_send_json_error( array( 'message' => 'Coordinates are required to check coverage.' ) );
+		if ( empty( $street_number ) || empty( $street_keyword ) ) {
+			wp_send_json_error( array( 'message' => 'A valid street address is required.' ) );
 		}
 
 		$salesforce = new Avalaunch_Salesforce();
-		$result     = $salesforce->get_services_by_coordinates( $lat, $lng );
+		$result     = $salesforce->get_services_by_address( $street_number, $street_keyword, $unit, $street_keyword2 );
 
 		if ( is_wp_error( $result ) ) {
 			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
