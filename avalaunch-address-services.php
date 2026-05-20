@@ -12,6 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define Plugin Constants
+define( 'AVALAUNCH_PLUGIN_VERSION', '1.0.0' );
 define( 'AVALAUNCH_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'AVALAUNCH_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 

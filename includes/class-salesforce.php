@@ -5,7 +5,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class Avalaunch_Salesforce {
 
-	private $token_transient_key = 'avalaunch_sf_access_token';
+	private $session_transient_key = 'avalaunch_sf_session';
 
 	/**
 	 * Searches for coverage by matching the Asset Name against the street number
@@ -21,12 +21,13 @@ class Avalaunch_Salesforce {
 			return $access_token;
 		}
 
-		$instance_url = get_transient( 'avalaunch_sf_instance_url' );
+		$session      = get_transient( $this->session_transient_key );
+		$instance_url = is_array( $session ) && ! empty( $session['instance_url'] ) ? $session['instance_url'] : '';
 
 		// Sanitize inputs for safe SOQL string interpolation.
-		$safe_number   = str_replace( "'", "\\'", $street_number );
-		$safe_keyword  = str_replace( "'", "\\'", $street_keyword );
-		$safe_place_id = str_replace( "'", "\\'", $place_id );
+		$safe_number   = $this->escape_soql( $street_number );
+		$safe_keyword  = $this->escape_soql( $street_keyword );
+		$safe_place_id = $this->escape_soql( $place_id );
 
 		// RecordTypeId that identifies valid service assets.
 		$record_type_id = '012Rb0000018JEbIAM';
@@ -51,7 +52,7 @@ class Avalaunch_Salesforce {
 		$fallback = "Street LIKE '%" . $safe_number . "%' AND Street LIKE '%" . $safe_keyword . "%'";
 
 		if ( ! empty( $street_keyword2 ) ) {
-			$safe_keyword2 = str_replace( "'", "\\'", $street_keyword2 );
+			$safe_keyword2 = $this->escape_soql( $street_keyword2 );
 			$fallback     .= " AND Street LIKE '%" . $safe_keyword2 . "%'";
 		}
 
@@ -61,7 +62,7 @@ class Avalaunch_Salesforce {
 
 		// If a unit number was provided (from the manual input), narrow to that specific unit.
 		if ( ! empty( $unit ) ) {
-			$safe_unit = str_replace( "'", "\\'", $unit );
+			$safe_unit = $this->escape_soql( $unit );
 			$where    .= " AND (Unit__c LIKE '%" . $safe_unit . "%' OR Street LIKE '%" . $safe_unit . "%')";
 		}
 
@@ -70,59 +71,7 @@ class Avalaunch_Salesforce {
 		return $this->execute_query( $instance_url, $query, $access_token );
 	}
 
-	/**
-	 * Crea un Lead en Salesforce cuando no hay cobertura en la dirección buscada.
-	 */
-	public function create_lead( $email, $searched_address ) {
-		$access_token = $this->get_access_token();
 
-		if ( is_wp_error( $access_token ) ) {
-			return $access_token;
-		}
-
-		$instance_url = get_transient( 'avalaunch_sf_instance_url' );
-
-		// Derivamos el LastName del email (campo requerido en Salesforce)
-		$email_parts = explode( '@', $email );
-		$last_name   = ! empty( $email_parts[0] ) ? sanitize_text_field( $email_parts[0] ) : 'Unknown';
-
-		$body = wp_json_encode( array(
-			'LastName'    => $last_name,
-			'Email'       => sanitize_email( $email ),
-			'Company'     => 'Residential Interest',
-			'LeadSource'  => 'Web',
-			'Description' => 'Address searched: ' . sanitize_text_field( $searched_address ),
-			'Street'      => sanitize_text_field( $searched_address ),
-		) );
-
-		$url      = $instance_url . '/services/data/v60.0/sobjects/Lead/';
-		$response = wp_remote_post( $url, array(
-			'headers' => array(
-				'Authorization' => 'Bearer ' . $access_token,
-				'Content-Type'  => 'application/json',
-			),
-			'body'    => $body,
-			'timeout' => 20,
-		) );
-
-		if ( is_wp_error( $response ) ) {
-			return $response;
-		}
-
-		$code = wp_remote_retrieve_response_code( $response );
-		$data = json_decode( wp_remote_retrieve_body( $response ), true );
-
-		// Salesforce returns 201 Created on success
-		if ( 201 !== $code ) {
-			$msg = isset( $data[0]['message'] ) ? $data[0]['message'] : 'Could not create lead (HTTP ' . $code . ').';
-			return new WP_Error( 'sf_lead_error', $msg );
-		}
-
-		return array(
-			'success' => true,
-			'id'      => $data['id'],
-		);
-	}
 
 	/**
 	 * Helper para ejecutar el query y formatear la respuesta para el frontend
@@ -165,7 +114,7 @@ class Avalaunch_Salesforce {
 	}
 
 	public function test_connection() {
-		delete_transient( $this->token_transient_key );
+		delete_transient( $this->session_transient_key );
 		$token = $this->get_access_token();
 
 		if ( is_wp_error( $token ) ) {
@@ -182,10 +131,10 @@ class Avalaunch_Salesforce {
 	}
 
 	protected function get_access_token() {
-		$token = get_transient( $this->token_transient_key );
+		$session = get_transient( $this->session_transient_key );
 
-		if ( $token ) {
-			return $token;
+		if ( is_array( $session ) && ! empty( $session['access_token'] ) ) {
+			return $session['access_token'];
 		}
 
 		$response = $this->request_token();
@@ -205,8 +154,10 @@ class Avalaunch_Salesforce {
 		$access_token = $data['access_token'];
 		$instance_url = $data['instance_url'];
 
-		set_transient( $this->token_transient_key, $access_token, 3600 );
-		set_transient( 'avalaunch_sf_instance_url', $instance_url, 3600 );
+		set_transient( $this->session_transient_key, array(
+			'access_token' => $access_token,
+			'instance_url' => $instance_url,
+		), 3600 );
 
 		return $access_token;
 	}
@@ -223,5 +174,16 @@ class Avalaunch_Salesforce {
 				'client_secret' => $options['sf_client_secret'],
 			),
 		) );
+	}
+
+	/**
+	 * Escapes special characters for safe SOQL queries.
+	 * First escapes backslashes, then single quotes.
+	 *
+	 * @param string $value The raw input string.
+	 * @return string The escaped string.
+	 */
+	private function escape_soql( $value ) {
+		return str_replace( array( '\\', "'" ), array( '\\\\', "\\'" ), $value );
 	}
 }

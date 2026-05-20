@@ -10,19 +10,17 @@ class Avalaunch_Frontend {
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 		add_action( 'wp_ajax_avalaunch_get_services',        array( $this, 'ajax_get_services' ) );
 		add_action( 'wp_ajax_nopriv_avalaunch_get_services', array( $this, 'ajax_get_services' ) );
-		add_action( 'wp_ajax_avalaunch_create_lead',         array( $this, 'ajax_create_lead' ) );
-		add_action( 'wp_ajax_nopriv_avalaunch_create_lead',  array( $this, 'ajax_create_lead' ) );
 	}
 
 	public function enqueue_scripts() {
 		$options        = get_option( 'avalaunch_options' );
 		$google_api_key = isset( $options['google_maps_api_key'] ) ? $options['google_maps_api_key'] : '';
 
-		wp_enqueue_script(
+		wp_register_script(
 			'avalaunch-frontend-js',
 			AVALAUNCH_PLUGIN_URL . 'assets/js/frontend.js',
 			array( 'jquery' ),
-			time(), // Versión por tiempo para evitar caché en desarrollo
+			AVALAUNCH_PLUGIN_VERSION,
 			true
 		);
 
@@ -32,7 +30,7 @@ class Avalaunch_Frontend {
 		) );
 
 		if ( ! empty( $google_api_key ) ) {
-			wp_enqueue_script(
+			wp_register_script(
 				'google-maps-places',
 				'https://maps.googleapis.com/maps/api/js?key=' . esc_attr( $google_api_key ) . '&libraries=places&v=weekly&loading=async&callback=initAvalaunchMap',
 				array( 'avalaunch-frontend-js' ),
@@ -41,15 +39,21 @@ class Avalaunch_Frontend {
 			);
 		}
 
-		wp_enqueue_style(
+		wp_register_style(
 			'avalaunch-frontend-css',
 			AVALAUNCH_PLUGIN_URL . 'assets/css/style.css',
 			array(),
-			time()
+			AVALAUNCH_PLUGIN_VERSION
 		);
 	}
 
 	public function render_shortcode( $atts ) {
+		wp_enqueue_script( 'avalaunch-frontend-js' );
+		if ( wp_script_is( 'google-maps-places', 'registered' ) ) {
+			wp_enqueue_script( 'google-maps-places' );
+		}
+		wp_enqueue_style( 'avalaunch-frontend-css' );
+
 		ob_start();
 		?>
 		<div id="avalaunch-address-search-wrapper">
@@ -165,27 +169,4 @@ class Avalaunch_Frontend {
 		wp_send_json_success( $result );
 	}
 
-	public function ajax_create_lead() {
-		check_ajax_referer( 'avalaunch_search_nonce', 'nonce' );
-
-		$email   = isset( $_POST['email'] )   ? sanitize_email( $_POST['email'] )         : '';
-		$address = isset( $_POST['address'] ) ? sanitize_text_field( $_POST['address'] )  : '';
-
-		if ( ! is_email( $email ) ) {
-			wp_send_json_error( array( 'message' => 'Please enter a valid email address.' ) );
-		}
-
-		if ( empty( $address ) ) {
-			wp_send_json_error( array( 'message' => 'Address is missing.' ) );
-		}
-
-		$salesforce = new Avalaunch_Salesforce();
-		$result     = $salesforce->create_lead( $email, $address );
-
-		if ( is_wp_error( $result ) ) {
-			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
-		}
-
-		wp_send_json_success( array( 'message' => 'Thank you! We will notify you when service becomes available.' ) );
-	}
 }
