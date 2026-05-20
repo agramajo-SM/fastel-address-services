@@ -32,7 +32,7 @@ window.initAvalaunchMap = function () {
 
     /* --- Attach Google Autocomplete (US addresses only) --- */
     var autocomplete = new google.maps.places.Autocomplete(input, {
-        fields: ['formatted_address', 'address_components'],
+        fields: ['formatted_address', 'address_components', 'place_id'],
         types: ['address'],
         componentRestrictions: { country: 'us' }
     });
@@ -178,7 +178,8 @@ function handlePlace(place) {
             street_number:   streetNumber,
             street_keyword:  streetKeyword,
             street_keyword2: streetKeyword2,
-            unit:            unit
+            unit:            unit,
+            place_id:        place.place_id
         },
         success: function (response) {
             var $results = $('#avalaunch-services-results');

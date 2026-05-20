@@ -149,13 +149,14 @@ class Avalaunch_Frontend {
 		$street_keyword  = isset( $_POST['street_keyword'] )  ? sanitize_text_field( $_POST['street_keyword'] )  : '';
 		$street_keyword2 = isset( $_POST['street_keyword2'] ) ? sanitize_text_field( $_POST['street_keyword2'] ) : '';
 		$unit            = isset( $_POST['unit'] )            ? sanitize_text_field( $_POST['unit'] )            : '';
+		$place_id        = isset( $_POST['place_id'] )        ? sanitize_text_field( $_POST['place_id'] )        : '';
 
 		if ( empty( $street_number ) || empty( $street_keyword ) ) {
 			wp_send_json_error( array( 'message' => 'A valid street address is required.' ) );
 		}
 
 		$salesforce = new Avalaunch_Salesforce();
-		$result     = $salesforce->get_services_by_address( $street_number, $street_keyword, $unit, $street_keyword2 );
+		$result     = $salesforce->get_services_by_address( $street_number, $street_keyword, $unit, $street_keyword2, $place_id );
 
 		if ( is_wp_error( $result ) ) {
 			wp_send_json_error( array( 'message' => $result->get_error_message() ) );

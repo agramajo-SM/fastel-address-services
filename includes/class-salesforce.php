@@ -14,7 +14,7 @@ class Avalaunch_Salesforce {
 	 * "10123 S Creek Run Way Unit F107" regardless of directional prefix.
 	 * Two keywords make false positives practically impossible.
 	 */
-	public function get_services_by_address( $street_number, $street_keyword, $unit = '', $street_keyword2 = '' ) {
+	public function get_services_by_address( $street_number, $street_keyword, $unit = '', $street_keyword2 = '', $place_id = '' ) {
 		$access_token = $this->get_access_token();
 
 		if ( is_wp_error( $access_token ) ) {
@@ -26,29 +26,46 @@ class Avalaunch_Salesforce {
 		// Sanitize inputs for safe SOQL string interpolation.
 		$safe_number   = str_replace( "'", "\\'", $street_number );
 		$safe_keyword  = str_replace( "'", "\\'", $street_keyword );
+		$safe_place_id = str_replace( "'", "\\'", $place_id );
 
 		// RecordTypeId that identifies valid service assets.
 		$record_type_id = '012Rb0000018JEbIAM';
 
-		// Match street number prefix + first keyword.
+		// Base filters: record type and project status.
 		$where = "RecordTypeId = '" . $record_type_id . "'"
-			   . " AND Commercial_Residential_Project__r.Status__c <> 'Closed'"
-			   . " AND Name LIKE '" . $safe_number . "%'"
-			   . " AND Name LIKE '%" . $safe_keyword . "%'";
+			   . " AND Commercial_Residential_Project__r.Status__c <> 'Closed'";
 
-		// Add second keyword if available — significantly reduces false positives.
+		/**
+		 * If we have a Google Place ID, use it for the most accurate match.
+		 * However, since Salesforce sometimes uses custom base64 Place IDs for units,
+		 * we combine the place ID check with a fallback address string match using OR.
+		 */
+		$address_conditions = array();
+
+		if ( ! empty( $safe_place_id ) ) {
+			$address_conditions[] = "place_id__c = '" . $safe_place_id . "'";
+		}
+
+		// Fallback: Street must contain the street number and the keyword(s).
+		// Note: We search Street for the street number because Unit__c is often the apartment number.
+		$fallback = "Street LIKE '%" . $safe_number . "%' AND Street LIKE '%" . $safe_keyword . "%'";
+
 		if ( ! empty( $street_keyword2 ) ) {
 			$safe_keyword2 = str_replace( "'", "\\'", $street_keyword2 );
-			$where        .= " AND Name LIKE '%" . $safe_keyword2 . "%'";
+			$fallback     .= " AND Street LIKE '%" . $safe_keyword2 . "%'";
 		}
 
-		// If a unit number was provided, narrow to that specific unit.
+		$address_conditions[] = "(" . $fallback . ")";
+
+		$where .= " AND (" . implode( " OR ", $address_conditions ) . ")";
+
+		// If a unit number was provided (from the manual input), narrow to that specific unit.
 		if ( ! empty( $unit ) ) {
 			$safe_unit = str_replace( "'", "\\'", $unit );
-			$where    .= " AND Unit__c = '" . $safe_unit . "'";
+			$where    .= " AND (Unit__c LIKE '%" . $safe_unit . "%' OR Street LIKE '%" . $safe_unit . "%')";
 		}
 
-		$query = "SELECT Id, Name, Unit__c FROM Asset WHERE " . $where . " LIMIT 1";
+		$query = "SELECT Id, Name, Unit__c, Street FROM Asset WHERE " . $where . " LIMIT 1";
 
 		return $this->execute_query( $instance_url, $query, $access_token );
 	}
@@ -110,7 +127,7 @@ class Avalaunch_Salesforce {
 	/**
 	 * Helper para ejecutar el query y formatear la respuesta para el frontend
 	 */
-	private function execute_query( $instance_url, $query, $access_token ) {
+	protected function execute_query( $instance_url, $query, $access_token ) {
 		$url = $instance_url . '/services/data/v60.0/query/?q=' . urlencode( $query );
 
 		$response = wp_remote_get( $url, array(
@@ -164,7 +181,7 @@ class Avalaunch_Salesforce {
 		);
 	}
 
-	private function get_access_token() {
+	protected function get_access_token() {
 		$token = get_transient( $this->token_transient_key );
 
 		if ( $token ) {
