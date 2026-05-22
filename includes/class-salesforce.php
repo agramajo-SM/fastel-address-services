@@ -148,7 +148,11 @@ class Avalaunch_Salesforce {
 		$data = json_decode( $response_body, true );
 
 		if ( 200 !== $response_code ) {
-			return new WP_Error( 'sf_auth_failed', 'Salesforce Error ' . $response_code );
+			return new WP_Error( 'sf_auth_failed', 'Salesforce Error ' . $response_code . ': ' . $response_body );
+		}
+
+		if ( empty( $data['access_token'] ) || empty( $data['instance_url'] ) ) {
+			return new WP_Error( 'sf_auth_failed', 'Invalid response from Salesforce: ' . $response_body );
 		}
 
 		$access_token = $data['access_token'];
@@ -164,7 +168,12 @@ class Avalaunch_Salesforce {
 
 	private function request_token() {
 		$options = get_option( 'avalaunch_options' );
-		$token_url = ! empty( $options['sf_custom_login_url'] ) ? $options['sf_custom_login_url'] : 'https://login.salesforce.com/services/oauth2/token';
+		$token_url = ! empty( $options['sf_custom_login_url'] ) ? $options['sf_custom_login_url'] : 'https://login.salesforce.com';
+        
+        // Ensure the token URL ends with the correct path
+        if ( strpos( $token_url, '/services/oauth2/token' ) === false ) {
+            $token_url = rtrim( $token_url, '/' ) . '/services/oauth2/token';
+        }
 
 		return wp_remote_post( $token_url, array(
 			'headers' => array( 'Content-Type' => 'application/x-www-form-urlencoded' ),
