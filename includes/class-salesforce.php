@@ -47,11 +47,8 @@ class Avalaunch_Salesforce {
 			$address_conditions[] = "place_id__c = '" . $safe_place_id . "'";
 		}
 
-		// 1. Caso normal (y Utah Grid): El número está al principio
 		$condition_start = "(Street LIKE '" . $safe_number . " %' OR Street LIKE '" . $safe_number . "\n%')";
 
-		// 2. Caso Rural/PO Box: Permite que el número esté más adelante, pero SOLO si la dirección 
-		// empieza con prefijos específicos de rutas rurales para evitar falsos positivos con unidades.
 		$condition_rural = "( (Street LIKE 'RR %' OR Street LIKE 'PO %' OR Street LIKE 'P.O.%' OR Street LIKE 'HC %' OR Street LIKE 'Route %') AND Street LIKE '%" . $safe_number . "%' )";
 
 		$fallback = "( " . $condition_start . " OR " . $condition_rural . " ) AND Street LIKE '%" . $safe_keyword . "%'";
