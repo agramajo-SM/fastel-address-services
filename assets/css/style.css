@@ -64,137 +64,109 @@ body:has(#avalaunch-address-search-wrapper) {
     overflow: visible;
 }
 
-/* Row: [input  |  radius group  |  button] — all bottom-aligned */
+/* Row styling */
 .aas-search-row {
     display: flex;
-    align-items: flex-end;
-    /* aligns input bottom with select bottom, under label */
+    align-items: center;
     gap: 12px;
     width: 100%;
-    /* always 100% of card interior */
     box-sizing: border-box;
 }
 
-/* Address input wrapper — fills remaining row space */
-#avalaunch-place-container {
-    position: relative;
-    flex: 1 1 auto;
+/* Grouping the address and unit into one continuous visual block */
+.aas-search-input-group {
+    display: flex;
+    align-items: center;
+    flex: 1 1 100%;
     min-width: 0;
-    height: 46px;
-}
-
-/* Search icon */
-#avalaunch-place-container::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 14px;
-    transform: translateY(-50%);
-    width: 18px;
-    height: 18px;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
-    background-size: contain;
-    background-repeat: no-repeat;
-    pointer-events: none;
-    z-index: 1;
-}
-
-/* Text input — fixed height */
-#avalaunch-address-input {
-    width: 100%;
-    box-sizing: border-box;
-    height: 46px;
-    padding: 0 16px 0 42px;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    font-size: 15px;
-    color: #111827;
+    height: 48px;
     background: #ffffff;
     border: 1.5px solid #d1d5db;
     border-radius: 10px;
-    outline: none;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
     transition: border-color 0.2s, box-shadow 0.2s;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    -webkit-appearance: none;
-    appearance: none;
+    overflow: hidden; /* keeps corners rounded */
 }
-
-#avalaunch-address-input:focus {
+.aas-search-input-group:focus-within {
     border-color: #3b82f6;
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
 }
 
+/* Search icon inside the group */
+.aas-search-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-left: 16px;
+    padding-right: 12px;
+    color: #9ca3af;
+    flex-shrink: 0;
+}
+.aas-search-icon svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* Address container & input */
+#avalaunch-address-search-wrapper #avalaunch-place-container {
+    flex: 1 1 100% !important;
+    min-width: 100px !important;
+    height: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+}
+#avalaunch-address-search-wrapper #avalaunch-address-input {
+    width: 100% !important;
+    height: 100% !important;
+    box-sizing: border-box !important;
+    padding: 0 12px 0 0 !important;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+    font-size: 15px !important;
+    color: #111827 !important;
+    outline: none !important;
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    margin: 0 !important;
+}
 #avalaunch-address-input::placeholder {
     color: #9ca3af;
 }
 
-/* Radius group: label stacked above select */
-.aas-radius-group {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
+/* Divider line between Address and Unit */
+.aas-input-divider {
+    width: 1px;
+    height: 24px;
+    background: #e5e7eb;
     flex-shrink: 0;
+    margin: 0 4px;
 }
 
-.aas-radius-label {
-    font-size: 12px;
-    font-weight: 500;
-    color: #6b7280;
-    white-space: nowrap;
+/* Unit / Apt input */
+#avalaunch-address-search-wrapper .aas-unit-input {
+    flex: 0 0 110px !important;
+    width: 110px !important;
+    min-width: 110px !important;
+    max-width: 110px !important;
+    height: 100% !important;
+    box-sizing: border-box !important;
+    padding: 0 16px 0 12px !important;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+    font-size: 15px !important;
+    color: #111827 !important;
+    outline: none !important;
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    margin: 0 !important;
 }
-
-#avalaunch-radius {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    font-size: 14px;
-    font-weight: 500;
-    color: #374151;
-    background: #ffffff;
-    border: 1.5px solid #d1d5db;
-    border-radius: 10px;
-    height: 46px;
-    padding: 0 40px 0 14px;
-    outline: none;
-    cursor: pointer;
-    min-width: 120px;
-    -webkit-appearance: none;
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 10px center;
-    background-size: 16px;
-    transition: border-color 0.2s, box-shadow 0.2s;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-
-#avalaunch-radius:focus {
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
-}
-
-/* Unit / Apt field */
-.aas-unit-input {
-    flex: 0 0 auto;
-    width: 120px;
-    height: 46px;
-    box-sizing: border-box;
-    padding: 0 14px;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    font-size: 15px;
-    color: #111827;
-    background: #ffffff;
-    border: 1.5px solid #d1d5db;
-    border-radius: 10px;
-    outline: none;
-    transition: border-color 0.2s, box-shadow 0.2s;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    -webkit-appearance: none;
-    appearance: none;
-}
-
-.aas-unit-input:focus {
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
-}
-
 .aas-unit-input::placeholder {
     color: #9ca3af;
 }
@@ -202,7 +174,7 @@ body:has(#avalaunch-address-search-wrapper) {
 /* Search button */
 #aas-search-btn {
     flex-shrink: 0;
-    height: 46px;
+    height: 48px;
     /* matches input + select height */
     background: #1e4db7;
     color: #ffffff;
@@ -734,41 +706,12 @@ a.aas-modal-link:hover {
         display: flex !important;
         flex-direction: column !important;
         align-items: stretch !important;
-        gap: 10px !important;
+        gap: 12px !important;
     }
 
-    /* Input container fills full width */
-    #avalaunch-place-container {
+    .aas-search-input-group {
         width: 100% !important;
         flex: none !important;
-    }
-
-    #avalaunch-address-input {
-        width: 100% !important;
-        box-sizing: border-box !important;
-        display: block !important;
-    }
-
-    /* Radius group: label + select side by side */
-    .aas-radius-group {
-        display: flex !important;
-        flex-direction: row !important;
-        align-items: center !important;
-        gap: 8px !important;
-        width: 100% !important;
-    }
-
-    #avalaunch-radius {
-        flex: 1 1 auto !important;
-        min-width: 0 !important;
-        width: auto !important;
-    }
-
-    /* Unit field: full width when stacked */
-    .aas-unit-input {
-        width: 100% !important;
-        flex: none !important;
-        box-sizing: border-box !important;
     }
 
     /* Search button full width */

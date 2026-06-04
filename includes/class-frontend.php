@@ -61,10 +61,16 @@ class Avalaunch_Frontend {
 			<div class="aas-card" id="aas-search-card">
 				<p class="aas-section-label">CHECK FIBER AVAILABILITY:</p>
 				<div class="aas-search-row">
-					<div id="avalaunch-place-container">
-						<input type="text" id="avalaunch-address-input" placeholder="Enter your address...">
+					<div class="aas-search-input-group">
+						<span class="aas-search-icon">
+							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="#9ca3af" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+						</span>
+						<div id="avalaunch-place-container">
+							<input type="text" id="avalaunch-address-input" placeholder="Enter your address..." autocomplete="off">
+						</div>
+						<div class="aas-input-divider"></div>
+						<input type="text" id="avalaunch-unit-input" class="aas-unit-input" placeholder="Unit / Apt" aria-label="Unit or apartment number (optional)">
 					</div>
-					<input type="text" id="avalaunch-unit-input" class="aas-unit-input" placeholder="Unit / Apt" aria-label="Unit or apartment number (optional)">
 					<button id="aas-search-btn" type="button">Check Coverage</button>
 				</div>
 			</div>

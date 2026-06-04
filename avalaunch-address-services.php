@@ -1,9 +1,12 @@
 <?php
 /**
- * Plugin Name: Avalaunch Address Services
+ * Plugin Name: AM Address Services
+ * Plugin URI:  https://avalaunchmedia.com
  * Description: Search for an address via Google Maps and fetch available services from Salesforce.
  * Version: 1.0.0
  * Author: Avalaunch Team
+ * Author URI:  https://avalaunchmedia.com
+ * License:     GPL-2.0+
  * Text Domain: avalaunch-address-services
  */
 
